@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Opening Trainer — The Comeback 2027</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div><p class="eyebrow">THE COMEBACK 2027</p><h1>Opening Trainer</h1><p class="tagline">Drill your Racing Kings repertoire one decision at a time.</p></div>
+    <nav><a class="nav-link" href="index.html">Home</a><a class="nav-link active" href="trainer.html">Trainer</a><a class="nav-link" href="converter.html">Converter</a></nav>
+  </header>
+
+  <main class="container">
+    <section class="card panel" style="margin-bottom:16px">
+      <div class="training-header">
+        <div>
+          <p class="eyebrow">REPERTOIRE</p>
+          <h3 style="margin-bottom:4px">Choose your opening</h3>
+          <span class="small">Opening files are read from <code>openings/index.json</code>.</span>
+        </div>
+        <div style="min-width:min(100%,320px)">
+          <select id="opening-select"><option>Loading openings…</option></select>
+        </div>
+      </div>
+      <div class="grid two" style="margin-top:4px">
+        <div class="field" style="margin-bottom:0">
+          <label for="chapter-select">Chapter</label>
+          <select id="chapter-select"><option>Loading…</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label for="side-select">Train as</label>
+          <select id="side-select">
+            <option value="both">Both sides</option>
+            <option value="white">White</option>
+            <option value="black">Black</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-row">
+        <button class="button primary" id="start">Start training</button>
+        <button class="button secondary" id="reset-stats">Reset local stats</button>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><strong id="stat-correct">0</strong><span>Correct</span></div>
+      <div class="stat"><strong id="stat-mistakes">0</strong><span>Mistakes</span></div>
+      <div class="stat"><strong id="stat-accuracy">—</strong><span>Accuracy</span></div>
+      <div class="stat"><strong id="stat-best">0%</strong><span>All-time accuracy</span></div>
+    </section>
+
+    <section class="board-wrap">
+      <div>
+        <div id="board" class="board" aria-label="Racing Kings training board"></div>
+        <div style="margin-top:12px" class="progress"><div id="progress-bar"></div></div>
+      </div>
+      <aside class="board-side">
+        <div class="card panel">
+          <p class="eyebrow">YOUR MOVE</p>
+          <h3 id="prompt">Select an opening and start.</h3>
+          <p id="feedback" class="notice">The board becomes interactive when training starts.</p>
+          <div class="button-row">
+            <button class="button secondary" id="next-line">Next line</button>
+            <button class="button secondary" id="restart">Restart</button>
+          </div>
+        </div>
+        <div class="card panel">
+          <p class="eyebrow">LINE</p>
+          <div id="line" class="line"><span class="small">No line loaded.</span></div>
+        </div>
+        <div class="card panel">
+          <p class="eyebrow">NOTE</p>
+          <p id="comment" class="small">Opening comments will appear here.</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <footer>Training results are stored only in this browser using localStorage.</footer>
+
+  <script type="module">
+    import { parseFen, makeFen } from 'https://esm.sh/chessops@0.15.1/fen';
+    import { parseUci } from 'https://esm.sh/chessops@0.15.1';
+    import { parseSan, makeSan } from 'https://esm.sh/chessops@0.15.1/san';
+    import { defaultPosition, RacingKings } from 'https://esm.sh/chessops@0.15.1/variant';
+    import { lichessRules } from 'https://esm.sh/chessops@0.15.1/compat';
+
+    const $ = id => document.getElementById(id);
+    const PIECES = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟', K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙' };
+    let library = [];
+    let selectedOpening = null;
+    let selectedChapter = null;
+    let selectedLine = null;
+    let currentNode = null;
+    let position = null;
+    let orientation = 'white';
+    let selectedSquare = null;
+    let training = false;
+    let lineHistory = [];
+    let stats = loadStats();
+
+    function loadStats() {
+      try { return JSON.parse(localStorage.getItem('comeback2027-training-stats')) || { correct:0, mistakes:0 }; }
+      catch { return { correct:0, mistakes:0 }; }
+    }
+    function saveStats() { localStorage.setItem('comeback2027-training-stats', JSON.stringify(stats)); updateStats(); }
+    function updateStats() {
+      $('stat-correct').textContent = stats.correct;
+      $('stat-mistakes').textContent = stats.mistakes;
+      const total = stats.correct + stats.mistakes;
+      $('stat-accuracy').textContent = total ? `${Math.round(stats.correct / total * 100)}%` : '—';
+      $('stat-best').textContent = total ? `${Math.round(stats.correct / total * 100)}%` : '0%';
+    }
+
+    function createPosition(fen) {
+      if (fen) return RacingKings.fromSetup(parseFen(fen).unwrap()).unwrap();
+      return defaultPosition(lichessRules('racingKings')).unwrap();
+    }
+
+    function fenBoard(fen) {
+      const board = Array.from({ length: 64 }, () => null);
+      const rows = fen.split(' ')[0].split('/');
+      for (let rank = 0; rank < 8; rank++) {
+        let file = 0;
+        for (const ch of rows[rank]) {
+          if (/\d/.test(ch)) file += Number(ch);
+          else board[(7-rank)*8 + file++] = ch;
+        }
+      }
+      return board;
+    }
+
+    function renderBoard() {
+      const wrap = $('board');
+      wrap.innerHTML = '';
+      if (!position) return;
+      const board = fenBoard(makeFen(position.toSetup()));
+      const files = orientation === 'white' ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
+      const ranks = orientation === 'white' ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
+      for (const rank of ranks) for (const file of files) {
+        const idx = rank*8 + file;
+        const sq = String.fromCharCode(97 + file) + (rank + 1);
+        const cell = document.createElement('button');
+        cell.type = 'button'; cell.className = `square ${((file + rank) % 2 === 0) ? 'light' : 'dark'}`;
+        cell.dataset.square = sq;
+        if (selectedSquare === sq) cell.classList.add('selected');
+        if (selectedSquare && isLegalClickTarget(selectedSquare, sq)) cell.classList.add('target');
+        if (board[idx]) {
+          const piece = document.createElement('span');
+          piece.className = `piece ${board[idx] === board[idx].toUpperCase() ? 'white' : 'black'}`;
+          piece.textContent = PIECES[board[idx]] || board[idx];
+          cell.appendChild(piece);
+        }
+        if (file === files[0]) { const c = document.createElement('span'); c.className='coords rank'; c.textContent=rank+1; cell.appendChild(c); }
+        if (rank === ranks[ranks.length-1]) { const c = document.createElement('span'); c.className='coords file'; c.textContent=String.fromCharCode(97+file); cell.appendChild(c); }
+        cell.addEventListener('click', () => clickSquare(sq));
+        wrap.appendChild(cell);
+      }
+    }
+
+    function userMoveCandidates(from) {
+      const result = [];
+      const fromIdx = parseSquare(from);
+      if (fromIdx == null) return result;
+      for (let to = 0; to < 64; to++) {
+        const uci = `${from}${squareName(to)}`;
+        const move = parseUci(uci);
+        if (move && position.isLegal(move)) result.push(squareName(to));
+      }
+      return result;
+    }
+    function parseSquare(name) { if (!/^[a-h][1-8]$/.test(name)) return null; return (Number(name[1])-1)*8 + name.charCodeAt(0)-97; }
+    function squareName(index) { return String.fromCharCode(97 + index % 8) + (Math.floor(index/8)+1); }
+    function isLegalClickTarget(from, to) { return userMoveCandidates(from).includes(to); }
+
+    function sameMove(a,b) { return a && b && a.from === b.from && a.to === b.to && (a.promotion || null) === (b.promotion || null); }
+
+    function matchingChildren(node, pos) {
+      return (node?.children || []).map(child => {
+        try { const move = parseSan(pos, child.san); return move ? { child, move } : null; } catch { return null; }
+      }).filter(Boolean);
+    }
+
+    function playMove(move, child) {
+      position = position.play(move);
+      currentNode = child;
+      lineHistory.push(child.san);
+      renderBoard();
+      renderLine();
+      renderComment(child.comments || []);
+      const totalPlies = countPlies(selectedLine);
+      const progress = Math.min(100, Math.round(lineHistory.length / Math.max(1,totalPlies) * 100));
+      $('progress-bar').style.width = `${progress}%`;
+    }
+
+    function autoOpponent() {
+      if (!training || !currentNode) return;
+      const side = position.turn === 'white' ? 'white' : 'black';
+      const trainSide = $('side-select').value;
+      if (trainSide === 'both' || side === trainSide) return;
+      const options = matchingChildren(currentNode, position);
+      if (!options.length) return;
+      // Main-line opponent responses are automatic in the first foundation version.
+      setTimeout(() => playMove(options[0].move, options[0].child), 230);
+    }
+
+    function clickSquare(sq) {
+      if (!training || !position) return;
+      const desiredTurn = $('side-select').value;
+      if (desiredTurn !== 'both' && desiredTurn !== position.turn) return;
+      if (!selectedSquare) {
+        if (userMoveCandidates(sq).length) { selectedSquare = sq; renderBoard(); }
+        return;
+      }
+      if (sq === selectedSquare) { selectedSquare = null; renderBoard(); return; }
+      const uci = `${selectedSquare}${sq}`;
+      const move = parseUci(uci);
+      const legal = move && position.isLegal(move);
+      if (!legal) { selectedSquare = null; renderBoard(); return; }
+      const options = matchingChildren(currentNode, position);
+      const match = options.find(x => sameMove(x.move, move));
+      if (!match) {
+        stats.mistakes++; saveStats();
+        $('feedback').className = 'notice bad';
+        $('feedback').textContent = 'Not the repertoire move. Try again.';
+        selectedSquare = null; renderBoard();
+        return;
+      }
+      stats.correct++; saveStats();
+      $('feedback').className = 'notice good';
+      $('feedback').textContent = `Correct: ${match.child.san}`;
+      selectedSquare = null;
+      playMove(move, match.child);
+      const next = matchingChildren(currentNode, position);
+      if (!next.length) {
+        $('prompt').textContent = 'Line complete.';
+        $('feedback').textContent = 'Excellent. Restart or move to the next line.';
+        return;
+      }
+      autoOpponent();
+      setTimeout(() => {
+        if (training && desiredTurn !== 'both') $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
+        else $('prompt').textContent = 'Find the next move.';
+      }, 260);
+    }
+
+    function countPlies(node) {
+      if (!node) return 0;
+      return 1 + countPlies((node.children || [])[0]);
+    }
+
+    function renderLine() {
+      const holder = $('line'); holder.innerHTML = '';
+      for (let i = 0; i < lineHistory.length; i++) {
+        const row = document.createElement('div'); row.className = `move-row ${i === lineHistory.length - 1 ? 'current' : ''}`;
+        row.textContent = `${Math.floor(i/2)+1}${i%2 ? '… ' : '. '}${lineHistory[i]}`;
+        holder.appendChild(row);
+      }
+      if (!lineHistory.length) holder.innerHTML = '<span class="small">Starting position</span>';
+    }
+    function renderComment(comments) { $('comment').textContent = comments.length ? comments.join(' ') : 'No comment on this position.'; }
+
+    function startLine() {
+      if (!selectedChapter || !selectedLine) return;
+      training = true; lineHistory = []; currentNode = { children: [selectedLine] }; position = createPosition(selectedChapter.startingFen);
+      orientation = $('side-select').value === 'black' ? 'black' : 'white';
+      $('feedback').className = 'notice'; $('feedback').textContent = 'Select a piece to begin.';
+      $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
+      $('progress-bar').style.width = '0%'; selectedSquare = null;
+      renderBoard(); renderLine(); renderComment(selectedLine.comments || []);
+      autoOpponent();
+      updateStats();
+    }
+
+    function resetLine() { startLine(); }
+
+    function chooseLine() { selectedLine = selectedChapter?.moves?.[0] || null; }
+
+    async function loadLibrary() {
+      try {
+        const response = await fetch('openings/index.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const index = await response.json();
+        const loaded = [];
+        for (const entry of index.openings || []) {
+          const r = await fetch(`openings/${entry.file}`, { cache: 'no-store' });
+          if (!r.ok) continue;
+          const data = await r.json();
+          loaded.push({ ...entry, data });
+        }
+        library = loaded;
+        const select = $('opening-select');
+        select.innerHTML = '';
+        library.forEach((item,i) => { const o=document.createElement('option'); o.value=i; o.textContent=item.name; select.appendChild(o); });
+        if (!library.length) throw new Error('No opening files are registered.');
+        select.dispatchEvent(new Event('change'));
+        $('status')?.remove();
+      } catch (error) {
+        $('opening-select').innerHTML = '<option>Could not load openings</option>';
+        $('prompt').textContent = error.message;
+        $('feedback').className = 'notice bad'; $('feedback').textContent = 'Check openings/index.json and the JSON files in openings/.';
+      }
+    }
+
+    function updateChapters() {
+      const item = library[Number($('opening-select').value)];
+      selectedOpening = item;
+      const chapters = item?.data?.chapters || [];
+      const cs = $('chapter-select'); cs.innerHTML = '';
+      chapters.forEach((chapter,i) => { const o=document.createElement('option'); o.value=i; o.textContent=chapter.name || `Chapter ${i+1}`; cs.appendChild(o); });
+      selectedChapter = chapters[0] || null; chooseLine();
+    }
+
+    $('opening-select').addEventListener('change', updateChapters);
+    $('chapter-select').addEventListener('change', () => { selectedChapter = selectedOpening?.data?.chapters?.[Number($('chapter-select').value)] || null; chooseLine(); });
+    $('start').addEventListener('click', startLine);
+    $('restart').addEventListener('click', resetLine);
+    $('next-line').addEventListener('click', () => { const alternatives = currentNode?.children || selectedChapter?.moves || []; if (!alternatives.length) return; selectedLine = alternatives[Math.floor(Math.random()*alternatives.length)]; startLine(); });
+    $('reset-stats').addEventListener('click', () => { stats = { correct:0, mistakes:0 }; saveStats(); $('feedback').textContent='Local training statistics reset.'; });
+    $('side-select').addEventListener('change', () => { if (training) startLine(); });
+    updateStats();
+    loadLibrary();
+  </script>
+</body>
+</html>
