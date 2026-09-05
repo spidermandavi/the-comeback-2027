@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "openings": [
+    {
+      "file": "sample-racing-kings.json",
+      "name": "Sample RK Line — Kg3",
+      "description": "A small test line used to verify the trainer pipeline."
+    }
+  ]
+}
