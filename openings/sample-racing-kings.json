@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "app": "The Comeback 2027",
+  "variant": "racingKings",
+  "convertedAt": "2026-09-05T00:00:00.000Z",
+  "source": "Built-in foundation sample",
+  "chapters": [
+    {
+      "id": "sample-kg3",
+      "name": "1.Kg3 Nxf2 2.Rxf2",
+      "tags": {
+        "Variant": "Racing Kings",
+        "ChapterName": "1.Kg3 Nxf2 2.Rxf2"
+      },
+      "startingFen": null,
+      "orientation": "white",
+      "moves": [
+        {
+          "san": "Kg3",
+          "comments": ["Foundation test line."],
+          "children": [
+            {
+              "san": "Nxf2",
+              "comments": [],
+              "children": [
+                {
+                  "san": "Rxf2",
+                  "comments": ["This sample confirms the trainer can follow a Racing Kings line."],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
