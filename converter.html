@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Study Converter — The Comeback 2027</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div><p class="eyebrow">THE COMEBACK 2027</p><h1>Study Converter</h1><p class="tagline">Turn Lichess Racing Kings studies into trainer-ready JSON.</p></div>
+    <nav><a class="nav-link" href="index.html">Home</a><a class="nav-link" href="trainer.html">Trainer</a><a class="nav-link active" href="converter.html">Converter</a></nav>
+  </header>
+  <main class="container">
+    <section class="tool-layout">
+      <div class="card panel">
+        <div class="field">
+          <label for="study-url">Lichess study URL</label>
+          <input id="study-url" placeholder="https://lichess.org/study/XXXXXXXX" autocomplete="off">
+          <p class="small">The converter requests the study PGN from Lichess. Public studies can be exported without signing in; private studies may require access in Lichess.</p>
+        </div>
+        <div class="button-row">
+          <button class="button primary" id="fetch-study">Fetch study PGN</button>
+          <button class="button secondary" id="clear-all">Clear</button>
+        </div>
+        <div class="field" style="margin-top:22px">
+          <label for="pgn-input">Or paste PGN</label>
+          <textarea id="pgn-input" spellcheck="false" placeholder="Paste one or more Lichess study chapters here..."></textarea>
+        </div>
+        <div class="button-row">
+          <button class="button primary" id="convert">Convert to JSON</button>
+        </div>
+        <div id="status" class="notice" style="margin-top:18px">Ready.</div>
+      </div>
+
+      <aside class="card panel">
+        <p class="eyebrow">OUTPUT FORMAT</p>
+        <h3>Trainer JSON</h3>
+        <p>The export stores study metadata, chapter tags, the starting FEN when present, and a nested move tree so your opening variations remain intact.</p>
+        <div class="notice"><strong>Typical flow</strong><br><span class="small">Lichess study → PGN → JSON → <code>openings/</code> → Trainer</span></div>
+        <a class="button secondary download" id="download" style="display:none">Download JSON</a>
+      </aside>
+    </section>
+
+    <section class="card panel" style="margin-top:18px">
+      <p class="eyebrow">PREVIEW</p>
+      <pre id="preview" style="margin:0;white-space:pre-wrap;overflow:auto;color:#cbd7e6">No conversion yet.</pre>
+    </section>
+  </main>
+  <footer>Study export is parsed locally in your browser.</footer>
+
+  <script type="module">
+    const $ = id => document.getElementById(id);
+    const status = $('status');
+    let currentBlobUrl = null;
+
+    function setStatus(message, kind = '') {
+      status.className = `notice ${kind}`;
+      status.textContent = message;
+    }
+
+    function parseTags(text) {
+      const tags = {};
+      for (const match of text.matchAll(/^\s*\[([^\s]+)\s+"((?:\\.|[^"\\])*)"\]\s*$/gm)) {
+        tags[match[1]] = match[2].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      }
+      return tags;
+    }
+
+    function splitGames(pgn) {
+      const starts = [...pgn.matchAll(/^\s*\[Event\s+/gmi)].map(m => m.index);
+      if (!starts.length) return [pgn.trim()].filter(Boolean);
+      return starts.map((start, i) => pgn.slice(start, starts[i + 1] ?? pgn.length).trim()).filter(Boolean);
+    }
+
+    function movetextOf(gameText) {
+      return gameText.replace(/^\s*\[[^\n]*\]\s*$/gm, '').trim();
+    }
+
+    function tokenizeMovetext(text) {
+      const tokens = [];
+      let i = 0;
+      while (i < text.length) {
+        const ch = text[i];
+        if (/\s/.test(ch)) { i++; continue; }
+        if (ch === '{') {
+          const end = text.indexOf('}', i + 1);
+          const e = end === -1 ? text.length : end;
+          tokens.push({ type: 'comment', value: text.slice(i + 1, e).trim() });
+          i = e + (end === -1 ? 0 : 1);
+          continue;
+        }
+        if (ch === ';') {
+          const end = text.indexOf('\n', i + 1);
+          const e = end === -1 ? text.length : end;
+          tokens.push({ type: 'comment', value: text.slice(i + 1, e).trim() });
+          i = e;
+          continue;
+        }
+        if (ch === '(' || ch === ')') { tokens.push({ type: ch }); i++; continue; }
+        if (ch === '$') {
+          const m = text.slice(i).match(/^\$\d+/);
+          if (m) { tokens.push({ type: 'nag', value: m[0] }); i += m[0].length; continue; }
+        }
+        let j = i;
+        while (j < text.length && !/[\s(){};$]/.test(text[j])) j++;
+        const word = text.slice(i, j);
+        if (/^(?:\d+\.{1,3}|\.\.\.)$/.test(word)) { i = j; continue; }
+        if (/^\d+\.(?:\.\.)?[A-Za-z]/.test(word)) {
+          const match = word.match(/^\d+\.(?:\.\.)?(.*)$/);
+          if (match?.[1]) tokens.push({ type: 'move', value: match[1] });
+        } else if (/^(?:1-0|0-1|1\/2-1\/2|\*)$/.test(word)) {
+          tokens.push({ type: 'result', value: word });
+        } else {
+          tokens.push({ type: 'move', value: word });
+        }
+        i = j;
+      }
+      return tokens;
+    }
+
+    function parseTree(movetext) {
+      const root = { children: [], comments: [] };
+      let current = root;
+      const stack = [];
+      for (const token of tokenizeMovetext(movetext)) {
+        if (token.type === '(') {
+          stack.push(current);
+          current = current.parent || root;
+          continue;
+        }
+        if (token.type === ')') {
+          current = stack.pop() || root;
+          continue;
+        }
+        if (token.type === 'comment') {
+          current.comments = current.comments || [];
+          current.comments.push(token.value);
+          continue;
+        }
+        if (token.type === 'move') {
+          const node = { san: token.value, comments: [], children: [] };
+          node.parent = current;
+          current.children.push(node);
+          current = node;
+        }
+      }
+      const clean = node => ({
+        san: node.san,
+        comments: node.comments || [],
+        children: (node.children || []).map(clean)
+      });
+      return (root.children || []).map(clean);
+    }
+
+    function convertPgn(pgn) {
+      const games = splitGames(pgn);
+      if (!games.length) throw new Error('No PGN was found.');
+      const chapters = games.map((gameText, index) => {
+        const tags = parseTags(gameText);
+        const variant = String(tags.Variant || tags.variant || '').toLowerCase();
+        if (variant && !variant.includes('racing')) throw new Error(`Chapter ${index + 1} is not Racing Kings (Variant: ${tags.Variant}).`);
+        return {
+          id: tags.ChapterId || tags.ChapterID || `chapter-${index + 1}`,
+          name: tags.ChapterName || tags.Title || `Chapter ${index + 1}`,
+          tags,
+          startingFen: tags.FEN || null,
+          orientation: tags.Orientation || null,
+          moves: parseTree(movetextOf(gameText))
+        };
+      });
+      return {
+        schemaVersion: 1,
+        app: 'The Comeback 2027',
+        variant: 'racingKings',
+        convertedAt: new Date().toISOString(),
+        source: 'Lichess study PGN',
+        chapters
+      };
+    }
+
+    $('fetch-study').addEventListener('click', async () => {
+      const url = $('study-url').value.trim();
+      const match = url.match(/lichess\.org\/study\/([A-Za-z0-9]{6,16})/i);
+      if (!match) { setStatus('Enter a valid Lichess study URL.', 'bad'); return; }
+      try {
+        setStatus('Fetching the study PGN…');
+        const endpoint = `https://lichess.org/study/${match[1]}.pgn?comments=true&variations=true&clocks=true`;
+        const response = await fetch(endpoint, { headers: { Accept: 'application/x-chess-pgn' } });
+        if (!response.ok) throw new Error(`Lichess returned HTTP ${response.status}.`);
+        const pgn = await response.text();
+        if (!pgn.trim()) throw new Error('The study returned an empty PGN.');
+        $('pgn-input').value = pgn;
+        setStatus('Study PGN fetched. Review it, then convert to JSON.', 'good');
+      } catch (error) {
+        setStatus(`Could not fetch the study: ${error.message} You can paste the PGN manually instead.`, 'bad');
+      }
+    });
+
+    $('convert').addEventListener('click', () => {
+      try {
+        const pgn = $('pgn-input').value.trim();
+        if (!pgn) throw new Error('Paste or fetch a PGN first.');
+        const data = convertPgn(pgn);
+        const json = JSON.stringify(data, null, 2);
+        $('preview').textContent = json;
+        if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+        currentBlobUrl = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        const download = $('download');
+        download.href = currentBlobUrl;
+        download.download = `${data.chapters[0]?.name?.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'racing-kings-opening'}.json`;
+        download.style.display = 'inline-flex';
+        setStatus(`Converted ${data.chapters.length} chapter${data.chapters.length === 1 ? '' : 's'} successfully.`, 'good');
+      } catch (error) {
+        setStatus(error.message, 'bad');
+      }
+    });
+
+    $('clear-all').addEventListener('click', () => {
+      $('study-url').value = '';
+      $('pgn-input').value = '';
+      $('preview').textContent = 'No conversion yet.';
+      $('download').style.display = 'none';
+      setStatus('Ready.');
+    });
+  </script>
+</body>
+</html>
