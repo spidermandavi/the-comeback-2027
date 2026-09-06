@@ -48,17 +48,17 @@
         <div class="notice compact" id="line-info">Select a line to see its repertoire details.</div>
       </div>
       <div class="button-row">
-        <button class="button primary" id="start">Start training</button>
+        <button class="button primary" id="start" type="button">Start training</button>
         <button class="button secondary" id="next-line" type="button">Next line</button>
         <button class="button secondary" id="reset-stats" type="button">Reset local stats</button>
       </div>
     </section>
 
     <section class="stats" aria-label="Training statistics">
-      <div class="stat"><strong id="stat-correct">0</strong><span>Correct this session</span></div>
-      <div class="stat"><strong id="stat-mistakes">0</strong><span>Mistakes this session</span></div>
-      <div class="stat"><strong id="stat-accuracy">—</strong><span>Session accuracy</span></div>
-      <div class="stat"><strong id="stat-lifetime">0%</strong><span>Lifetime accuracy</span></div>
+      <div class="stat"><strong id="stat-correct">0</strong><span>Correct attempts</span></div>
+      <div class="stat"><strong id="stat-mistakes">0</strong><span>Mistakes</span></div>
+      <div class="stat"><strong id="stat-accuracy">—</strong><span>Accuracy</span></div>
+      <div class="stat"><strong id="stat-lifetime">0</strong><span>Lines tracked</span></div>
     </section>
 
     <section class="board-wrap">
@@ -86,7 +86,7 @@
       </aside>
     </section>
   </main>
-  <footer>Training results are stored only in this browser using localStorage.</footer>
+  <footer>Training statistics are stored in this browser and remain until you reset them.</footer>
 
   <div id="promotion-modal" class="promotion-modal" hidden>
     <div class="promotion-card" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
@@ -120,32 +120,54 @@
     let selectedSquare = null;
     let training = false;
     let lineHistory = [];
-    let session = { correct: 0, mistakes: 0 };
     let stats = loadStats();
+    let session = stats.session || { correct: stats.global.correct, mistakes: stats.global.mistakes };
     let opponentTimer = null;
     let promotionState = null;
     let runId = 0;
 
+    function emptyStats() {
+      return { version: 2, global: { correct: 0, mistakes: 0 }, session: { correct: 0, mistakes: 0 }, byLine: {} };
+    }
+
     function loadStats() {
       try {
         const raw = JSON.parse(localStorage.getItem(STATS_KEY));
-        if (raw && raw.version === 2) return raw;
+        if (raw && raw.version === 2 && raw.global && raw.byLine) {
+          return {
+            version: 2,
+            global: {
+              correct: Number(raw.global.correct) || 0,
+              mistakes: Number(raw.global.mistakes) || 0
+            },
+            session: {
+              correct: Number(raw.session?.correct ?? raw.global.correct) || 0,
+              mistakes: Number(raw.session?.mistakes ?? raw.global.mistakes) || 0
+            },
+            byLine: raw.byLine && typeof raw.byLine === 'object' ? raw.byLine : {}
+          };
+        }
         if (raw && Number.isFinite(raw.correct) && Number.isFinite(raw.mistakes)) {
-          return { version: 2, global: { correct: raw.correct, mistakes: raw.mistakes }, byLine: {} };
+          return { version: 2, global: { correct: raw.correct, mistakes: raw.mistakes }, session: { correct: raw.correct, mistakes: raw.mistakes }, byLine: {} };
         }
       } catch {}
-      return { version: 2, global: { correct: 0, mistakes: 0 }, byLine: {} };
+      return emptyStats();
     }
 
     function saveStats() {
-      try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch {}
+      stats.session = { correct: session.correct, mistakes: session.mistakes };
+      try {
+        localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+      } catch {
+        $('feedback').className = 'notice bad';
+        $('feedback').textContent = 'Browser storage is unavailable, so statistics cannot be saved on this device.';
+      }
       updateStats();
     }
 
     function lineKey() {
       if (!selectedOpening || !selectedChapter || !selectedLine) return null;
-      return [selectedOpening.file, selectedChapter.id || selectedChapter.name, selectedLine.id || lineHistory.join(' ')]
-        .map(String).join('::');
+      return [selectedOpening.file, selectedChapter.id || selectedChapter.name, selectedLine.id || selectedLine.san.join(' ')].map(String).join('::');
     }
 
     function getLineStats() {
@@ -166,15 +188,15 @@
         stats.byLine[key] = entry;
       }
       saveStats();
+      updateLineInfo();
     }
 
     function updateStats() {
-      $('stat-correct').textContent = session.correct;
-      $('stat-mistakes').textContent = session.mistakes;
-      const sessionTotal = session.correct + session.mistakes;
-      const globalTotal = stats.global.correct + stats.global.mistakes;
-      $('stat-accuracy').textContent = sessionTotal ? `${Math.round(session.correct / sessionTotal * 100)}%` : '—';
-      $('stat-lifetime').textContent = globalTotal ? `${Math.round(stats.global.correct / globalTotal * 100)}%` : '0%';
+      const total = stats.global.correct + stats.global.mistakes;
+      $('stat-correct').textContent = stats.global.correct;
+      $('stat-mistakes').textContent = stats.global.mistakes;
+      $('stat-accuracy').textContent = total ? `${Math.round(stats.global.correct / total * 100)}%` : '—';
+      $('stat-lifetime').textContent = Object.keys(stats.byLine).length;
     }
 
     function createPosition(fen) {
@@ -208,7 +230,6 @@
       let board;
       try { board = fenBoard(makeFen(position.toSetup())); }
       catch { $('feedback').className = 'notice bad'; $('feedback').textContent = 'The position could not be rendered.'; return; }
-
       const files = orientation === 'white' ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
       const ranks = orientation === 'white' ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
       for (const rank of ranks) for (const file of files) {
@@ -264,15 +285,15 @@
 
     function flattenLines(chapter) {
       const result = [];
-      const walk = (nodes, prefix, depth = 0) => {
+      const walk = (nodes, prefix) => {
         if (!nodes?.length) return;
-        nodes.forEach((node, index) => {
+        nodes.forEach(node => {
           const path = [...prefix, node];
           if (!node.children?.length) {
             result.push({ id: `line-${result.length + 1}`, nodes: path, san: path.map(n => n.san), label: formatLineLabel(path, result.length + 1) });
             return;
           }
-          walk(node.children, path, depth + 1);
+          walk(node.children, path);
         });
       };
       walk(chapter?.moves || [], []);
@@ -366,7 +387,6 @@
         return;
       }
       if (sq === selectedSquare) { selectedSquare = null; renderBoard(); return; }
-
       const candidates = legalMovesFrom(selectedSquare).filter(move => move.to === sq);
       if (!candidates.length) { selectedSquare = null; renderBoard(); return; }
       if (candidates.length > 1) {
@@ -445,9 +465,8 @@
       hidePromotionDialog();
       runId++;
       training = false;
-      try {
-        position = createPosition(selectedChapter.startingFen || null);
-      } catch (error) {
+      try { position = createPosition(selectedChapter.startingFen || null); }
+      catch (error) {
         $('prompt').textContent = 'Invalid opening position.';
         $('feedback').className = 'notice bad';
         $('feedback').textContent = error.message;
@@ -510,9 +529,7 @@
     }
 
     function validateOpening(data, file) {
-      if (!data || data.schemaVersion !== 1 || data.variant !== 'racingKings' || !Array.isArray(data.chapters)) {
-        throw new Error(`${file} is not a valid The Comeback 2027 Racing Kings opening file.`);
-      }
+      if (!data || data.schemaVersion !== 1 || data.variant !== 'racingKings' || !Array.isArray(data.chapters)) throw new Error(`${file} is not a valid The Comeback 2027 Racing Kings opening file.`);
       for (const chapter of data.chapters) {
         if (!chapter || !Array.isArray(chapter.moves)) throw new Error(`${file} contains a chapter without a valid moves array.`);
       }
@@ -546,7 +563,7 @@
     $('restart').addEventListener('click', resetLine);
     $('next-line').addEventListener('click', chooseNextLine);
     $('reset-stats').addEventListener('click', () => {
-      stats = { version: 2, global: { correct: 0, mistakes: 0 }, byLine: {} };
+      stats = emptyStats();
       session = { correct: 0, mistakes: 0 };
       saveStats(); updateLineInfo();
       $('feedback').className = 'notice';
