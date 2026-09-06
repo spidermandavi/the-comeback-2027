@@ -14,7 +14,20 @@
   </header>
 
   <main class="container">
-    <section class="card panel" style="margin-bottom:16px">
+    <section class="card panel roadmap-panel">
+      <div class="roadmap-heading">
+        <div>
+          <p class="eyebrow">OPENING JOURNEY</p>
+          <h3>Your repertoire</h3>
+          <p class="small">Each JSON opening is a lesson. Progress is based on complete lines you have finished, and the journey grows automatically when you add more openings.</p>
+        </div>
+        <div class="roadmap-total" id="roadmap-total">0%</div>
+      </div>
+      <div class="roadmap-track" aria-hidden="true"><div id="roadmap-total-bar"></div></div>
+      <div id="opening-roadmap" class="opening-roadmap" aria-label="Opening progress"></div>
+    </section>
+
+    <section class="card panel" style="margin-top:16px">
       <div class="training-header">
         <div>
           <p class="eyebrow">REPERTOIRE</p>
@@ -64,24 +77,22 @@
     <section class="board-wrap">
       <div>
         <div id="board" class="board" aria-label="Racing Kings training board"></div>
-        <div style="margin-top:12px" class="progress" aria-label="Line progress"><div id="progress-bar"></div></div>
+        <div style="margin-top:12px" class="progress" aria-label="Current line progress"><div id="progress-bar"></div></div>
       </div>
       <aside class="board-side">
         <div class="card panel">
           <p class="eyebrow">YOUR MOVE</p>
           <h3 id="prompt">Select an opening and start.</h3>
           <p id="feedback" class="notice" role="status">The board becomes interactive when training starts.</p>
-          <div class="button-row">
-            <button class="button secondary" id="restart" type="button">Restart line</button>
-          </div>
+          <div class="button-row"><button class="button secondary" id="restart" type="button">Restart line</button></div>
         </div>
         <div class="card panel">
           <p class="eyebrow">LINE</p>
           <div id="line" class="line"><span class="small">No line loaded.</span></div>
         </div>
         <div class="card panel">
-          <p class="eyebrow">NOTE</p>
-          <p id="comment" class="small">Opening comments will appear here.</p>
+          <p class="eyebrow">ANNOTATION</p>
+          <p id="comment" class="small">Move notes will appear here when you reach the annotated move.</p>
         </div>
       </aside>
     </section>
@@ -107,48 +118,38 @@
     const $ = id => document.getElementById(id);
     const PIECES = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟', K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙' };
     const PROMOTION_PIECES = { q:'Queen', r:'Rook', b:'Bishop', n:'Knight' };
-    const STATS_KEY = 'comeback2027-training-stats-v2';
+    const STATS_KEY = 'comeback2027-training-stats-v3';
 
     let library = [];
     let selectedOpening = null;
     let selectedChapter = null;
     let selectedLine = null;
     let lineIndex = [];
-    let currentNode = null;
     let position = null;
     let orientation = 'white';
     let selectedSquare = null;
     let training = false;
     let lineHistory = [];
     let stats = loadStats();
-    let session = stats.session || { correct: stats.global.correct, mistakes: stats.global.mistakes };
+    let session = stats.session;
     let opponentTimer = null;
     let promotionState = null;
     let runId = 0;
 
     function emptyStats() {
-      return { version: 2, global: { correct: 0, mistakes: 0 }, session: { correct: 0, mistakes: 0 }, byLine: {} };
+      return { version: 3, global: { correct: 0, mistakes: 0 }, session: { correct: 0, mistakes: 0 }, byLine: {} };
     }
 
     function loadStats() {
       try {
         const raw = JSON.parse(localStorage.getItem(STATS_KEY));
-        if (raw && raw.version === 2 && raw.global && raw.byLine) {
+        if (raw && raw.global && raw.byLine) {
           return {
-            version: 2,
-            global: {
-              correct: Number(raw.global.correct) || 0,
-              mistakes: Number(raw.global.mistakes) || 0
-            },
-            session: {
-              correct: Number(raw.session?.correct ?? raw.global.correct) || 0,
-              mistakes: Number(raw.session?.mistakes ?? raw.global.mistakes) || 0
-            },
-            byLine: raw.byLine && typeof raw.byLine === 'object' ? raw.byLine : {}
+            version: 3,
+            global: { correct: Number(raw.global.correct) || 0, mistakes: Number(raw.global.mistakes) || 0 },
+            session: { correct: Number(raw.session?.correct ?? raw.global.correct) || 0, mistakes: Number(raw.session?.mistakes ?? raw.global.mistakes) || 0 },
+            byLine: typeof raw.byLine === 'object' && raw.byLine ? raw.byLine : {}
           };
-        }
-        if (raw && Number.isFinite(raw.correct) && Number.isFinite(raw.mistakes)) {
-          return { version: 2, global: { correct: raw.correct, mistakes: raw.mistakes }, session: { correct: raw.correct, mistakes: raw.mistakes }, byLine: {} };
         }
       } catch {}
       return emptyStats();
@@ -156,24 +157,30 @@
 
     function saveStats() {
       stats.session = { correct: session.correct, mistakes: session.mistakes };
-      try {
-        localStorage.setItem(STATS_KEY, JSON.stringify(stats));
-      } catch {
+      try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }
+      catch {
         $('feedback').className = 'notice bad';
         $('feedback').textContent = 'Browser storage is unavailable, so statistics cannot be saved on this device.';
       }
       updateStats();
+      renderOpeningRoadmap();
     }
 
-    function lineKey() {
-      if (!selectedOpening || !selectedChapter || !selectedLine) return null;
-      return [selectedOpening.file, selectedChapter.id || selectedChapter.name, selectedLine.id || selectedLine.san.join(' ')].map(String).join('::');
+    function lineKey(line = selectedLine, opening = selectedOpening, chapter = selectedChapter) {
+      if (!opening || !chapter || !line) return null;
+      return [opening.file, chapter.id || chapter.name, line.id || line.nodes.map(n => n.san).join(' ')].map(String).join('::');
     }
 
-    function getLineStats() {
-      const key = lineKey();
-      if (!key) return { correct: 0, mistakes: 0, attempts: 0 };
-      return stats.byLine[key] || { correct: 0, mistakes: 0, attempts: 0 };
+    function getLineStats(line = selectedLine, opening = selectedOpening, chapter = selectedChapter) {
+      const key = lineKey(line, opening, chapter);
+      if (!key) return { correct: 0, mistakes: 0, attempts: 0, completedAt: null };
+      const raw = stats.byLine[key] || {};
+      return {
+        correct: Number(raw.correct) || 0,
+        mistakes: Number(raw.mistakes) || 0,
+        attempts: Number(raw.attempts) || 0,
+        completedAt: raw.completedAt || null
+      };
     }
 
     function recordAttempt(correct) {
@@ -182,8 +189,8 @@
       const key = lineKey();
       if (key) {
         const entry = stats.byLine[key] || { correct: 0, mistakes: 0, attempts: 0 };
-        entry[correct ? 'correct' : 'mistakes']++;
-        entry.attempts++;
+        entry[correct ? 'correct' : 'mistakes'] = Number(entry[correct ? 'correct' : 'mistakes']) + 1;
+        entry.attempts = Number(entry.attempts) + 1;
         entry.lastAttempt = new Date().toISOString();
         stats.byLine[key] = entry;
       }
@@ -191,12 +198,22 @@
       updateLineInfo();
     }
 
+    function markLineCompleted() {
+      const key = lineKey();
+      if (!key) return;
+      const entry = stats.byLine[key] || { correct: 0, mistakes: 0, attempts: 0 };
+      if (!entry.completedAt) entry.completedAt = new Date().toISOString();
+      entry.completions = (Number(entry.completions) || 0) + 1;
+      stats.byLine[key] = entry;
+      saveStats();
+    }
+
     function updateStats() {
       const total = stats.global.correct + stats.global.mistakes;
       $('stat-correct').textContent = stats.global.correct;
       $('stat-mistakes').textContent = stats.global.mistakes;
       $('stat-accuracy').textContent = total ? `${Math.round(stats.global.correct / total * 100)}%` : '—';
-      $('stat-lifetime').textContent = Object.keys(stats.byLine).length;
+      $('stat-lifetime').textContent = Object.values(stats.byLine).filter(v => v && v.completedAt).length;
     }
 
     function createPosition(fen) {
@@ -264,10 +281,10 @@
       for (let to = 0; to < 64; to++) {
         const target = squareName(to);
         const basic = parseUci(`${from}${target}`);
-        if (basic && position.isLegal(basic)) result.push({ to: target, uci: `${from}${target}`, promotion: null });
+        if (basic && position.isLegal(basic)) result.push({ from, to: target, uci: `${from}${target}`, promotion: null });
         for (const promotion of ['q','r','b','n']) {
           const promoted = parseUci(`${from}${target}${promotion}`);
-          if (promoted && position.isLegal(promoted)) result.push({ to: target, uci: `${from}${target}${promotion}`, promotion });
+          if (promoted && position.isLegal(promoted)) result.push({ from, to: target, uci: `${from}${target}${promotion}`, promotion });
         }
       }
       return result;
@@ -276,11 +293,9 @@
     function legalTargets(from) { return [...new Set(legalMovesFrom(from).map(move => move.to))]; }
     function sameMove(a, b) { return a && b && a.from === b.from && a.to === b.to && (a.promotion || null) === (b.promotion || null); }
 
-    function matchingChildren(node, pos) {
-      return (node?.children || []).map(child => {
-        try { const move = parseSan(pos, child.san); return move ? { child, move } : null; }
-        catch { return null; }
-      }).filter(Boolean);
+    function nodeMove(node, pos) {
+      if (!node) return null;
+      try { return parseSan(pos, node.san); } catch { return null; }
     }
 
     function flattenLines(chapter) {
@@ -291,9 +306,7 @@
           const path = [...prefix, node];
           if (!node.children?.length) {
             result.push({ id: `line-${result.length + 1}`, nodes: path, san: path.map(n => n.san), label: formatLineLabel(path, result.length + 1) });
-            return;
-          }
-          walk(node.children, path);
+          } else walk(node.children, path);
         });
       };
       walk(chapter?.moves || [], []);
@@ -331,40 +344,51 @@
       const lineStats = getLineStats();
       const total = lineStats.correct + lineStats.mistakes;
       const accuracy = total ? `${Math.round(lineStats.correct / total * 100)}%` : 'not trained';
-      info.innerHTML = `<strong>${selectedLine.nodes.length} plies</strong> · ${lineStats.attempts} attempts · ${accuracy} accuracy`;
+      const complete = lineStats.completedAt ? ' · completed' : '';
+      info.innerHTML = `<strong>${selectedLine.nodes.length} plies</strong> · ${lineStats.attempts} attempts · ${accuracy}${complete}`;
     }
 
-    function playMove(move, child) {
+    function renderAnnotation(node) {
+      const comments = Array.isArray(node?.comments) ? node.comments.filter(Boolean) : [];
+      const glyphs = Array.isArray(node?.glyphs) ? node.glyphs : [];
+      const nags = Array.isArray(node?.nags) ? node.nags : [];
+      const parts = [];
+      if (glyphs.length) parts.push(`Evaluation: ${glyphs.join(' ')}`);
+      if (nags.length) parts.push(`NAG ${nags.join(', ')}`);
+      if (comments.length) parts.push(...comments);
+      $('comment').textContent = parts.length ? parts.join(' · ') : 'No annotation on this move.';
+    }
+
+    function playMove(move, node) {
       position = position.play(move);
-      currentNode = child;
-      lineHistory.push(child.san);
+      lineHistory.push(node.san);
       renderBoard();
       renderLine();
-      renderComment(child.comments || []);
+      renderAnnotation(node);
       const totalPlies = selectedLine?.nodes?.length || 1;
       const progress = Math.min(100, Math.round(lineHistory.length / totalPlies * 100));
       $('progress-bar').style.width = `${progress}%`;
     }
 
-    function clearOpponentTimer() {
-      if (opponentTimer) { clearTimeout(opponentTimer); opponentTimer = null; }
-    }
+    function clearOpponentTimer() { if (opponentTimer) { clearTimeout(opponentTimer); opponentTimer = null; } }
+
+    function expectedNode() { return selectedLine?.nodes?.[lineHistory.length] || null; }
 
     function autoOpponent() {
       clearOpponentTimer();
-      if (!training || !currentNode || !position || $('side-select').value === 'both') return;
+      if (!training || !position || $('side-select').value === 'both') return;
       const trainSide = $('side-select').value;
       const side = position.turn === 'white' ? 'white' : 'black';
       if (side === trainSide) return;
-      const options = matchingChildren(currentNode, position);
-      if (!options.length) return;
+      const node = expectedNode();
+      const move = nodeMove(node, position);
+      if (!node || !move) return;
       const expectedRun = runId;
       opponentTimer = setTimeout(() => {
         opponentTimer = null;
-        if (!training || expectedRun !== runId || !currentNode || !position) return;
-        playMove(options[0].move, options[0].child);
-        const next = matchingChildren(currentNode, position);
-        if (!next.length) finishLine();
+        if (!training || expectedRun !== runId || !position) return;
+        playMove(move, node);
+        if (!expectedNode()) finishLine();
         else $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
       }, 230);
     }
@@ -372,10 +396,13 @@
     function finishLine() {
       training = false;
       clearOpponentTimer();
+      markLineCompleted();
+      $('progress-bar').style.width = '100%';
       $('prompt').textContent = 'Line complete.';
       $('feedback').className = 'notice good';
-      $('feedback').textContent = 'Excellent. Start again or choose the next repertoire line.';
+      $('feedback').textContent = 'Excellent. This repertoire line is now marked complete.';
       updateLineInfo();
+      renderOpeningRoadmap();
     }
 
     function clickSquare(sq) {
@@ -389,31 +416,27 @@
       if (sq === selectedSquare) { selectedSquare = null; renderBoard(); return; }
       const candidates = legalMovesFrom(selectedSquare).filter(move => move.to === sq);
       if (!candidates.length) { selectedSquare = null; renderBoard(); return; }
-      if (candidates.length > 1) {
-        showPromotionDialog(selectedSquare, sq, candidates);
-        return;
-      }
-      submitUserMove(parseUci(candidates[0].uci));
+      if (candidates.length > 1) { showPromotionDialog(selectedSquare, sq, candidates); return; }
+      submitUserMove(candidates[0]);
     }
 
     function submitUserMove(move) {
-      const options = matchingChildren(currentNode, position);
-      const match = options.find(x => sameMove(x.move, move));
-      if (!match) {
+      const node = expectedNode();
+      const expectedMove = nodeMove(node, position);
+      if (!node || !expectedMove || !sameMove(expectedMove, move)) {
         recordAttempt(false);
         $('feedback').className = 'notice bad';
-        $('feedback').textContent = 'Not the repertoire move. Try again.';
+        $('feedback').textContent = 'Not the selected repertoire move. Try again.';
         selectedSquare = null;
         renderBoard();
         return;
       }
       recordAttempt(true);
       $('feedback').className = 'notice good';
-      $('feedback').textContent = `Correct: ${match.child.san}`;
+      $('feedback').textContent = `Correct: ${node.san}`;
       selectedSquare = null;
-      playMove(move, match.child);
-      const next = matchingChildren(currentNode, position);
-      if (!next.length) { finishLine(); return; }
+      playMove(move, node);
+      if (!expectedNode()) { finishLine(); return; }
       autoOpponent();
       if ($('side-select').value === 'both') $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
     }
@@ -431,9 +454,8 @@
         button.textContent = `${PIECES[p]} ${PROMOTION_PIECES[candidate.promotion]}`;
         button.addEventListener('click', () => {
           if (!promotionState || promotionState.expectedRun !== runId) return;
-          const selected = promotionState.candidates.find(c => c.promotion === candidate.promotion);
           hidePromotionDialog();
-          submitUserMove(parseUci(selected.uci));
+          submitUserMove(candidate);
         });
         buttons.appendChild(button);
       });
@@ -441,10 +463,7 @@
       buttons.querySelector('button')?.focus();
     }
 
-    function hidePromotionDialog() {
-      promotionState = null;
-      $('promotion-modal').hidden = true;
-    }
+    function hidePromotionDialog() { promotionState = null; $('promotion-modal').hidden = true; }
 
     function renderLine() {
       const holder = $('line'); holder.innerHTML = '';
@@ -456,8 +475,6 @@
       });
       if (!lineHistory.length) holder.innerHTML = '<span class="small">Starting position</span>';
     }
-
-    function renderComment(comments) { $('comment').textContent = comments?.length ? comments.join(' ') : 'No comment on this position.'; }
 
     function startLine() {
       if (!selectedChapter || !selectedLine) return;
@@ -474,18 +491,19 @@
       }
       training = true;
       lineHistory = [];
-      currentNode = { children: [selectedLine.nodes[0]] };
       orientation = $('side-select').value === 'black' ? 'black' : 'white';
       selectedSquare = null;
       $('feedback').className = 'notice';
       $('feedback').textContent = 'Select a piece to begin.';
       $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
       $('progress-bar').style.width = '0%';
-      renderBoard(); renderLine(); renderComment(selectedLine.nodes[0]?.comments || []); updateLineInfo(); updateStats();
+      renderBoard();
+      renderLine();
+      renderAnnotation(null);
+      updateLineInfo();
+      updateStats();
       autoOpponent();
     }
-
-    function resetLine() { startLine(); }
 
     function chooseNextLine() {
       if (!lineIndex.length) return;
@@ -497,13 +515,53 @@
       startLine();
     }
 
+    function linesForOpening(item) {
+      return (item?.data?.chapters || []).flatMap(chapter => flattenLines(chapter).map(line => ({ line, chapter })));
+    }
+
+    function openingProgress(item) {
+      const all = linesForOpening(item);
+      const completed = all.filter(({ line, chapter }) => getLineStats(line, item, chapter).completedAt).length;
+      return { total: all.length, completed, percent: all.length ? Math.round(completed / all.length * 100) : 0 };
+    }
+
+    function renderOpeningRoadmap() {
+      const holder = $('opening-roadmap');
+      holder.innerHTML = '';
+      if (!library.length) return;
+      let allLines = 0;
+      let completedLines = 0;
+      library.forEach((item, index) => {
+        const p = openingProgress(item);
+        allLines += p.total;
+        completedLines += p.completed;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `opening-lesson ${item === selectedOpening ? 'selected' : ''}${p.percent === 100 ? ' complete' : ''}`;
+        card.innerHTML = `<span class="lesson-number">${index + 1}</span><span class="lesson-name">${escapeHtml(item.name || item.file)}</span><span class="lesson-count">${p.completed}/${p.total} lines</span><span class="lesson-progress"><span style="width:${p.percent}%"></span></span><span class="lesson-percent">${p.percent}%</span>`;
+        card.addEventListener('click', () => {
+          $('opening-select').value = String(index);
+          updateChapters();
+          window.scrollTo({ top: $('opening-select').getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
+        });
+        holder.appendChild(card);
+      });
+      const overall = allLines ? Math.round(completedLines / allLines * 100) : 0;
+      $('roadmap-total').textContent = `${overall}%`;
+      $('roadmap-total-bar').style.width = `${overall}%`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
+    }
+
     async function loadLibrary() {
       try {
         const response = await fetch('openings/index.json', { cache: 'no-store' });
         if (!response.ok) throw new Error(`Could not load openings/index.json (HTTP ${response.status}).`);
         const index = await response.json();
         if (index.schemaVersion !== 1 || !Array.isArray(index.openings)) throw new Error('openings/index.json has an invalid schema.');
-        const loaded = await Promise.all((index.openings || []).map(async entry => {
+        library = await Promise.all(index.openings.map(async entry => {
           if (!entry?.file || typeof entry.file !== 'string') throw new Error('An opening index entry is missing its file name.');
           const r = await fetch(`openings/${encodeURIComponent(entry.file).replace(/%2F/g, '/')}`, { cache: 'no-store' });
           if (!r.ok) throw new Error(`Could not load ${entry.file} (HTTP ${r.status}).`);
@@ -511,14 +569,17 @@
           validateOpening(data, entry.file);
           return { ...entry, data };
         }));
-        library = loaded;
         const select = $('opening-select');
         select.innerHTML = '';
         library.forEach((item, i) => {
-          const o = document.createElement('option'); o.value = i; o.textContent = item.name || item.file; select.appendChild(o);
+          const option = document.createElement('option');
+          option.value = i;
+          option.textContent = item.name || item.file;
+          select.appendChild(option);
         });
         if (!library.length) throw new Error('No opening files are registered.');
         updateChapters();
+        renderOpeningRoadmap();
       } catch (error) {
         $('opening-select').innerHTML = '<option>Could not load openings</option>';
         $('prompt').textContent = 'Opening library unavailable.';
@@ -537,22 +598,21 @@
 
     function updateChapters() {
       clearOpponentTimer(); hidePromotionDialog(); training = false; runId++;
-      const item = library[Number($('opening-select').value)];
-      selectedOpening = item;
-      const chapters = item?.data?.chapters || [];
+      selectedOpening = library[Number($('opening-select').value)];
+      const chapters = selectedOpening?.data?.chapters || [];
       const cs = $('chapter-select'); cs.innerHTML = '';
       chapters.forEach((chapter, i) => { const o = document.createElement('option'); o.value = i; o.textContent = chapter.name || `Chapter ${i+1}`; cs.appendChild(o); });
       selectedChapter = chapters[0] || null;
       updateLineList();
-      position = null; currentNode = null; selectedSquare = null; lineHistory = [];
-      renderBoard(); renderLine(); updateStats();
+      position = null; selectedSquare = null; lineHistory = [];
+      renderBoard(); renderLine(); updateStats(); renderOpeningRoadmap();
     }
 
     function updateSelectedChapter() {
       clearOpponentTimer(); hidePromotionDialog(); training = false; runId++;
       selectedChapter = selectedOpening?.data?.chapters?.[Number($('chapter-select').value)] || null;
       updateLineList();
-      position = null; currentNode = null; selectedSquare = null; lineHistory = [];
+      position = null; selectedSquare = null; lineHistory = [];
       renderBoard(); renderLine();
     }
 
@@ -560,12 +620,14 @@
     $('chapter-select').addEventListener('change', updateSelectedChapter);
     $('line-select').addEventListener('change', () => { selectedLine = lineIndex[Number($('line-select').value)] || null; updateLineInfo(); });
     $('start').addEventListener('click', startLine);
-    $('restart').addEventListener('click', resetLine);
+    $('restart').addEventListener('click', startLine);
     $('next-line').addEventListener('click', chooseNextLine);
     $('reset-stats').addEventListener('click', () => {
+      if (!window.confirm('Reset all local training statistics and opening progress?')) return;
       stats = emptyStats();
       session = { correct: 0, mistakes: 0 };
-      saveStats(); updateLineInfo();
+      saveStats();
+      updateLineInfo();
       $('feedback').className = 'notice';
       $('feedback').textContent = 'Local training statistics reset.';
     });
@@ -574,6 +636,7 @@
     $('promotion-modal').addEventListener('click', event => { if (event.target.id === 'promotion-modal') hidePromotionDialog(); });
 
     updateStats();
+    renderOpeningRoadmap();
     loadLibrary();
   </script>
 </body>

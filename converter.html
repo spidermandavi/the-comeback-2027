@@ -19,7 +19,7 @@
         <div class="field">
           <label for="study-url">Public Lichess study URL</label>
           <input id="study-url" inputmode="url" placeholder="https://lichess.org/study/XXXXXXXX" autocomplete="off">
-          <p class="small">Public studies can be exported without signing in. Private or restricted studies must be exported from Lichess and pasted below.</p>
+          <p class="small">Public studies can be fetched directly. Private or restricted studies can be exported from Lichess and pasted below.</p>
         </div>
         <div class="button-row">
           <button class="button primary" id="fetch-study" type="button">Fetch study PGN</button>
@@ -38,7 +38,7 @@
       <aside class="card panel">
         <p class="eyebrow">OUTPUT FORMAT</p>
         <h3>Trainer JSON</h3>
-        <p>The export stores study metadata, chapter tags, starting FEN, comments, NAG annotations and the complete variation tree.</p>
+        <p>Every move keeps its text comments, numeric NAGs, symbolic glyphs and child variations. The full branching tree is retained in the exported JSON.</p>
         <div class="notice"><strong>Typical flow</strong><br><span class="small">Lichess study → PGN → JSON → <code>openings/</code> → Trainer</span></div>
         <a class="button secondary download" id="download" style="display:none">Download JSON</a>
       </aside>
@@ -76,25 +76,31 @@
     function splitGames(pgn) {
       const text = pgn.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
       if (!text) return [];
-      const starts = [];
       const lines = text.split('\n');
+      const boundaries = [0];
       let offset = 0;
       let sawMovetext = false;
       for (const line of lines) {
         if (/^\s*\[[^\s\]]+\s+"/.test(line)) {
-          if (sawMovetext) starts.push(offset);
+          if (sawMovetext) boundaries.push(offset);
         } else if (line.trim() && !/^\s*[%#]/.test(line) && !/^\s*\[/.test(line)) {
           sawMovetext = true;
         }
         offset += line.length + 1;
       }
-      if (!starts.length) return [text];
-      const boundaries = [0, ...starts];
       return boundaries.map((start, i) => text.slice(start, boundaries[i + 1] ?? text.length).trim()).filter(Boolean);
     }
 
     function stripHeaderLines(text) {
-      return text.replace(/^\s*\[[^\n]*\]\s*$/gm, '').replace(/^\s*%.*$/gm, '').trim();
+      return text
+        .replace(/^\s*\[[^\n]*\]\s*$/gm, '')
+        .replace(/^\s*%.*$/gm, '')
+        .trim();
+    }
+
+    function classifyWord(word) {
+      if (/^(?:1-0|0-1|1\/2-1\/2|\*)$/.test(word)) return { type: 'result', value: word };
+      return { type: 'move', value: word };
     }
 
     function tokenizeMovetext(text) {
@@ -120,45 +126,47 @@
         if (ch === '(' || ch === ')') { tokens.push({ type: ch }); i++; continue; }
         if (ch === '$') {
           const m = text.slice(i).match(/^\$\d+/);
-          if (m) { tokens.push({ type: 'nag', value: Number(m[0].slice(1)) }); i += m[0].length; continue; }
+          if (m) {
+            tokens.push({ type: 'nag', value: Number(m[0].slice(1)) });
+            i += m[0].length;
+            continue;
+          }
         }
         let j = i;
         while (j < text.length && !/[\s(){};$]/.test(text[j])) j++;
         const word = text.slice(i, j);
-        if (/^(?:\d+\.{1,3}|\.\.\.)$/.test(word)) { i = j; continue; }
-        if (/^\d+\.(?:\.\.)?[^\d]/.test(word)) {
-          const match = word.match(/^\d+\.(?:\.\.)?(.*)$/);
-          if (match?.[1]) tokens.push(classifyWord(match[1]));
-        } else {
-          tokens.push(classifyWord(word));
+        if (/^\d+\.(?:\.\.)?$/.test(word) || /^\.\.\.$/.test(word)) {
+          i = j;
+          continue;
         }
+        const attachedMoveNumber = word.match(/^\d+\.(?:\.\.)?(.*)$/);
+        if (attachedMoveNumber && attachedMoveNumber[1]) tokens.push(classifyWord(attachedMoveNumber[1]));
+        else tokens.push(classifyWord(word));
         i = j;
       }
       return tokens;
     }
 
-    function classifyWord(word) {
-      if (/^(?:1-0|0-1|1\/2-1\/2|\*)$/.test(word)) return { type: 'result', value: word };
-      return { type: 'move', value: word };
-    }
-
     function normalizeSan(raw) {
       let san = String(raw).trim();
-      const suffixes = [];
-      san = san.replace(/(\!\!|\?\?|\!\?|\?\!|\!|\?)+$/g, match => { suffixes.push(...match.match(/!!|\?\?|!\?|\?!|!|\?/g)); return ''; });
-      const checkMarker = san.endsWith('+') ? '+' : san.endsWith('#') ? '#' : '';
-      return { san, glyphs: suffixes, checkMarker };
+      const glyphs = [];
+      san = san.replace(/(!!|\?\?|!\?|\?!|!|\?)+$/g, match => {
+        glyphs.push(...(match.match(/!!|\?\?|!\?|\?!|!|\?/g) || []));
+        return '';
+      });
+      return { san, glyphs };
     }
 
     function parseTree(movetext) {
-      const root = { children: [], comments: [], parent: null };
+      const root = { children: [], comments: [] };
       let current = root;
       const stack = [];
       let pendingNags = [];
+
       for (const token of tokenizeMovetext(movetext)) {
         if (token.type === '(') {
-          const branchPoint = current.parent || root;
-          stack.push({ returnTo: current, branchPoint });
+          const branchPoint = current === root ? root : (current.parent || root);
+          stack.push({ returnTo: current });
           current = branchPoint;
           continue;
         }
@@ -167,7 +175,7 @@
           continue;
         }
         if (token.type === 'comment') {
-          current.comments = current.comments || [];
+          current.comments ||= [];
           if (token.value) current.comments.push(token.value);
           continue;
         }
@@ -191,36 +199,43 @@
           current = node;
         }
       }
+
       if (stack.length) throw new Error('Unclosed PGN variation.');
 
-      const clean = node => ({
-        san: node.san,
-        comments: node.comments || [],
-        nags: node.nags || [],
-        glyphs: node.glyphs || [],
-        children: (node.children || []).map(clean)
-      });
-      return (root.children || []).map(clean);
+      function clean(node) {
+        return {
+          san: node.san,
+          comments: Array.isArray(node.comments) ? [...node.comments] : [],
+          nags: Array.isArray(node.nags) ? [...node.nags] : [],
+          glyphs: Array.isArray(node.glyphs) ? [...node.glyphs] : [],
+          children: Array.isArray(node.children) ? node.children.map(clean) : []
+        };
+      }
+      return root.children.map(clean);
     }
 
     function convertPgn(pgn) {
       const games = splitGames(pgn);
       if (!games.length) throw new Error('No PGN was found.');
+
       const chapters = games.map((gameText, index) => {
         const tags = parseTags(gameText);
         const variantValue = String(tags.Variant || tags.variant || '').trim();
         if (variantValue && !/racing\s*kings/i.test(variantValue)) {
           throw new Error(`Chapter ${index + 1} is not Racing Kings (Variant: ${variantValue}).`);
         }
+        const moves = parseTree(stripHeaderLines(gameText));
+        if (!moves.length) throw new Error(`Chapter ${index + 1} contains no moves.`);
         return {
           id: tags.ChapterId || tags.ChapterID || `chapter-${index + 1}`,
           name: tags.ChapterName || tags.Title || tags.Event || `Chapter ${index + 1}`,
           tags,
           startingFen: tags.FEN || null,
           orientation: tags.Orientation || null,
-          moves: parseTree(stripHeaderLines(gameText))
+          moves
         };
       });
+
       return {
         schemaVersion: 1,
         app: 'The Comeback 2027',
@@ -237,7 +252,7 @@
       if (!match) { setStatus('Enter a valid public Lichess study URL.', 'bad'); return; }
       try {
         setStatus('Fetching the study PGN…');
-        const endpoint = `https://lichess.org/study/${match[1]}.pgn?comments=true&variations=true&clocks=true`;
+        const endpoint = `https://lichess.org/study/${match[1]}.pgn?comments=true&variations=true&clocks=true`; 
         const response = await fetch(endpoint, { headers: { Accept: 'application/x-chess-pgn' } });
         if (!response.ok) throw new Error(`Lichess returned HTTP ${response.status}.`);
         const pgn = await response.text();
@@ -263,11 +278,22 @@
         const base = data.chapters[0]?.name?.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
         download.download = `${base || 'racing-kings-opening'}.json`;
         download.style.display = 'inline-flex';
-        setStatus(`Converted ${data.chapters.length} chapter${data.chapters.length === 1 ? '' : 's'} successfully.`, 'good');
+        const lineCount = data.chapters.reduce((sum, chapter) => sum + countLines(chapter.moves), 0);
+        setStatus(`Converted ${data.chapters.length} chapter${data.chapters.length === 1 ? '' : 's'} and preserved ${lineCount} complete repertoire line${lineCount === 1 ? '' : 's'}.`, 'good');
       } catch (error) {
         setStatus(error.message || String(error), 'bad');
       }
     });
+
+    function countLines(nodes) {
+      let count = 0;
+      const walk = list => (list || []).forEach(node => {
+        if (!node.children?.length) count++;
+        else walk(node.children);
+      });
+      walk(nodes);
+      return count;
+    }
 
     $('clear-all').addEventListener('click', () => {
       $('study-url').value = '';
