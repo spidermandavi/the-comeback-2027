@@ -12,31 +12,11 @@
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-  margin: 0;
-  min-height: 100vh;
-  color: var(--text);
-  background:
-    radial-gradient(circle at 15% 0%, rgba(46,94,143,.22), transparent 36%),
-    radial-gradient(circle at 90% 10%, rgba(231,187,99,.08), transparent 30%),
-    var(--bg);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+body { margin: 0; min-height: 100vh; color: var(--text); background: radial-gradient(circle at 15% 0%, rgba(46,94,143,.22), transparent 36%), radial-gradient(circle at 90% 10%, rgba(231,187,99,.08), transparent 30%), var(--bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 3px solid rgba(231,187,99,.55);
-  outline-offset: 2px;
-}
-.site-header {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 34px 22px 18px;
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: flex-end;
-}
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgba(231,187,99,.55); outline-offset: 2px; }
+.site-header { max-width: 1180px; margin: 0 auto; padding: 34px 22px 18px; display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 6px; font-size: clamp(2rem, 4vw, 3.1rem); letter-spacing: -.035em; }
 h2 { margin-bottom: 14px; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.04; letter-spacing: -.04em; }
@@ -66,15 +46,11 @@ nav { display: flex; flex-wrap: wrap; gap: 8px; }
 .text-link { color: var(--gold); font-weight: 750; }
 .roadmap { margin-top: 16px; }
 footer { padding: 30px 22px 42px; text-align: center; color: #6f839a; font-size: .84rem; }
-
-/* Converter / trainer */
 .tool-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
 .panel { padding: 22px; }
 .field { margin-bottom: 16px; }
 label { display: block; margin-bottom: 8px; color: var(--text); font-size: .84rem; font-weight: 700; }
-input, textarea, select {
-  width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; color: var(--text); background: #091626; outline: none; font: inherit;
-}
+input, textarea, select { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; color: var(--text); background: #091626; outline: none; font: inherit; }
 textarea { min-height: 290px; resize: vertical; line-height: 1.45; }
 input:focus, textarea:focus, select:focus { border-color: rgba(231,187,99,.55); box-shadow: 0 0 0 3px rgba(231,187,99,.08); }
 .small { font-size: .78rem; color: var(--muted); }
@@ -89,9 +65,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(231,187,99,.55); 
 .stat strong { display:block; font-size:1.25rem; }
 .stat span { display:block; margin-top:3px; color:var(--muted); font-size:.75rem; }
 .board-wrap { display:grid; grid-template-columns:minmax(0,620px) minmax(0,1fr); gap:18px; align-items:start; }
-.board {
-  width:min(100%,620px); aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); border-radius:16px; overflow:hidden; border:3px solid rgba(255,255,255,.08); box-shadow:var(--shadow); user-select:none;
-}
+.board { width:min(100%,620px); aspect-ratio:1; display:grid; grid-template-columns:repeat(8,1fr); border-radius:16px; overflow:hidden; border:3px solid rgba(255,255,255,.08); box-shadow:var(--shadow); user-select:none; }
 .square { position:relative; display:grid; place-items:center; cursor:pointer; font-size:clamp(28px,6vw,52px); border:0; padding:0; }
 .square.light { background:#d9c6a0; }
 .square.dark { background:#7a6245; }
@@ -116,8 +90,6 @@ input:focus, textarea:focus, select:focus { border-color: rgba(231,187,99,.55); 
 .promotion-card { width:min(100%,420px); padding:24px; border:1px solid var(--border); border-radius:20px; background:var(--panel); box-shadow:var(--shadow); }
 .promotion-buttons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:18px 0 12px; }
 .promotion-choice { min-height:52px; font-size:.95rem; }
-
-/* Opening journey */
 .roadmap-panel { overflow:hidden; }
 .roadmap-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; }
 .roadmap-heading h3 { margin-bottom:4px; }
@@ -141,12 +113,17 @@ input:focus, textarea:focus, select:focus { border-color: rgba(231,187,99,.55); 
 .lesson-progress > span { display:block; height:100%; width:0; border-radius:inherit; background:var(--gold); transition:width .25s ease; }
 .opening-lesson.complete .lesson-progress > span { background:var(--green); }
 
+/* Chessground replaces the homemade square/piece renderer on the trainer. */
+#board.board.cg-wrap { display:block; position:relative; width:min(100%,620px); aspect-ratio:1; overflow:hidden; border-radius:16px; border:3px solid rgba(255,255,255,.08); box-shadow:var(--shadow); user-select:none; touch-action:none; }
+#board.board.cg-wrap .cg-board { position:absolute; inset:0; width:100%; height:100%; }
+#board.board.cg-wrap .cg-wrap { width:100%; height:100%; }
+
 @media (max-width: 860px) {
   .site-header { align-items:flex-start; flex-direction:column; }
   .hero { grid-template-columns:1fr; }
   .hero-stat { width:180px; min-height:150px; }
   .tool-layout, .board-wrap { grid-template-columns:1fr; }
-  .board { margin-inline:auto; }
+  #board.board.cg-wrap { margin-inline:auto; }
   .training-header { align-items:flex-start; flex-direction:column; }
   .training-header > div:last-child { width:100%; }
   .roadmap-heading { align-items:flex-start; }
