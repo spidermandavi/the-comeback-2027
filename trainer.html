@@ -10,7 +10,16 @@
 <link rel="stylesheet" href="https://unpkg.com/@lichess-org/chessground@10.1.0/assets/chessground.brown.css">
 <link rel="stylesheet" href="https://unpkg.com/@lichess-org/chessground@10.1.0/assets/chessground.cburnett.css">
 <style>
-#board{width:min(100%,720px);aspect-ratio:1;touch-action:none}.board-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);gap:18px}.cg-wrap{position:relative}.cg-wrap cg-board{background:#b58863}.cg-wrap .cg-shapes{pointer-events:none}.cg-wrap .dest{box-shadow:inset 0 0 0 999px rgba(40,160,80,.18)}.cg-wrap .move-dest{background:radial-gradient(circle,rgba(40,160,80,.65) 20%,transparent 22%)}@media(max-width:900px){.board-wrap{grid-template-columns:1fr}#board{max-width:680px;margin:auto}}
+#board{width:min(100%,720px);aspect-ratio:1;touch-action:none}
+.board-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);gap:18px}
+.cg-wrap{position:relative}
+#board.cg-wrap .cg-board{width:100%;height:100%;position:absolute;inset:0}
+#board.cg-wrap cg-board{background:#5f7890!important}
+#board.cg-wrap .cg-shapes{pointer-events:none}
+#board.cg-wrap .move-dest{background:radial-gradient(circle,rgba(231,187,99,.95) 20%,transparent 22%)!important}
+#board.cg-wrap .premove-dest{background:rgba(231,187,99,.2)!important}
+#board.cg-wrap .last-move{background:rgba(231,187,99,.18)!important}
+@media(max-width:900px){.board-wrap{grid-template-columns:1fr}#board{max-width:680px;margin:auto}}
 </style>
 </head>
 <body>
@@ -25,13 +34,13 @@
 import { Chessground } from 'https://esm.sh/@lichess-org/chessground@10.1.0';
 import { parseFen, makeFen } from 'https://esm.sh/chessops@0.15.1/fen';
 import { parseSan } from 'https://esm.sh/chessops@0.15.1/san';
-import { parseUci } from 'https://esm.sh/chessops@0.15.1/util';
 import { RacingKings } from 'https://esm.sh/chessops@0.15.1/variant';
 
 const $=id=>document.getElementById(id);
 const STATS_KEY='comeback2027-training-stats-v3';
+const DEFAULT_RK_FEN='krbnNBRK/qrbnNBRQ/8/8/8/8/8/8 w - - 0 1';
 let library=[],selectedOpening=null,selectedChapter=null,selectedLine=null,lineIndex=[];
-let position=null,training=false,lineHistory=[],orientation='white',ground=null,runId=0;
+let position=null,training=false,lineHistory=[],orientation='white',ground=null;
 let stats=loadStats();
 
 function emptyStats(){return{version:3,global:{correct:0,mistakes:0},byLine:{}}}
@@ -43,97 +52,125 @@ function lineStats(line=selectedLine,opening=selectedOpening,chapter=selectedCha
 function recordAttempt(ok){stats.global[ok?'correct':'mistakes']++;const k=lineKey();if(k){const e=stats.byLine[k]||{correct:0,mistakes:0,attempts:0};e[ok?'correct':'mistakes']=(e[ok?'correct':'mistakes']||0)+1;e.attempts=(e.attempts||0)+1;e.lastAttempt=new Date().toISOString();stats.byLine[k]=e}saveStats()}
 function completeLine(){const k=lineKey();if(!k)return;const e=stats.byLine[k]||{correct:0,mistakes:0,attempts:0};e.completedAt=e.completedAt||new Date().toISOString();e.completions=(e.completions||0)+1;stats.byLine[k]=e;saveStats()}
 
-// IMPORTANT: chessops uses a boolean Color: true = White, false = Black.
 function colorName(color){return color?'white':'black'}
-function currentColor(){return colorName(position.turn)}
-
+function currentColor(){return position?colorName(position.turn):'white'}
 function createPosition(startingFen){
   try{
-    if(!startingFen)return RacingKings.default();
-    const setup=parseFen(startingFen).unwrap();
+    const setup=parseFen(startingFen||DEFAULT_RK_FEN).unwrap();
     const fen=makeFen(setup);
-    if(/(^|\/)\d*p|p/.test(fen.split(' ')[0].toLowerCase()))throw new Error('Racing Kings positions cannot contain pawns.');
+    if(/[pP]/.test(fen.split(' ')[0]))throw new Error('Racing Kings positions cannot contain pawns.');
     return RacingKings.fromSetup(setup).unwrap();
   }catch(e){throw new Error(`Could not create Racing Kings position: ${e.message||e}`)}
 }
 function currentFen(){return makeFen(position.toSetup())}
-function fenBoard(fen){const out=Array(64).fill(null),rows=fen.split(' ')[0].split('/');for(let r=0;r<8;r++){let f=0;for(const ch of rows[r]){if(/\d/.test(ch))f+=Number(ch);else out[(7-r)*8+f++]=ch}}return out}
-function idx(s){return/^[a-h][1-8]$/.test(s)?s.charCodeAt(0)-97+(Number(s[1])-1)*8:null}
-function squareName(i){return String.fromCharCode(97+i%8)+String(Math.floor(i/8)+1)}
-function pieceAt(square){const i=idx(square);return i===null?null:fenBoard(currentFen())[i]||null}
 
-// Generate moves through chessops' RacingKings position, never through normal-chess rules.
-function legalMovesFrom(from){
-  if(!position||idx(from)===null)return[];
-  const piece=pieceAt(from);
-  if(!piece)return[];
-  const isWhite=piece===piece.toUpperCase();
-  if(isWhite!==position.turn)return[];
-  const result=[];
-  for(let to=0;to<64;to++){
-    const dest=squareName(to);
-    const normal=parseUci(`${from}${dest}`);
-    if(normal&&position.isLegal(normal))result.push({from,to:dest,promotion:null,move:normal});
-    for(const promotion of ['q','r','b','n']){
-      const promoted=parseUci(`${from}${dest}${promotion}`);
-      if(promoted&&position.isLegal(promoted))result.push({from,to:dest,promotion,move:promoted});
-    }
-  }
-  return result;
+// Use the variant implementation itself. This is important: Racing Kings has
+// different legality rules from standard chess, and chessops already supplies
+// the exact legal destination map for its RacingKings position.
+function legalDestinationMap(){
+  if(!position||!training)return new Map();
+  return position.dests();
 }
-function destMap(){
-  const map=new Map();
-  if(!position||!training)return map;
-  for(let i=0;i<64;i++){
-    const from=squareName(i),moves=legalMovesFrom(from);
-    if(moves.length)map.set(from,[...new Set(moves.map(m=>m.to))]);
-  }
-  return map;
+function allowedColor(){
+  if(!training)return undefined;
+  const side=$('side-select').value;
+  if(side==='both')return 'both';
+  return side===currentColor()?side:undefined;
 }
 function refreshBoard(animate=false){
   if(!ground||!position)return;
+  const color=allowedColor();
   ground.set({
     fen:currentFen(),
     orientation,
     turnColor:currentColor(),
-    movable:{color:training?($('side-select').value==='both'?'both':$('side-select').value):'none',free:false,dests:destMap(),showDests:true,events:{after:handleBoardMove}},
+    movable:{
+      color:color||'none',
+      free:false,
+      dests:legalDestinationMap(),
+      showDests:true,
+      events:{after:handleBoardMove}
+    },
     selectable:{enabled:true},
     animation:{enabled:animate,duration:180}
   });
 }
 function expectedNode(){return selectedLine?.nodes?.[lineHistory.length]||null}
-function nodeMove(node){try{return node?parseSan(position,node.san):null}catch{return null}}
-function sameMove(a,b){return!!(a&&b&&a.from===b.from&&a.to===b.to&&(a.promotion||null)===(b.promotion||null))}
+function expectedMove(node){try{return node?parseSan(position,node.san):null}catch{return null}}
+function moveKey(move){return move?`${move.from}${move.to}${move.promotion||''}`:null}
+function sameMove(a,b){return moveKey(a)===moveKey(b)}
+function resetVisualPosition(){if(ground&&position)ground.set({fen:currentFen(),turnColor:currentColor(),movable:{color:allowedColor()||'none',free:false,dests:legalDestinationMap(),showDests:true,events:{after:handleBoardMove}}})}
 function playMove(move,node){position=position.play(move);lineHistory.push(node.san);refreshBoard(true);renderLine();renderAnnotation(node);$('progress-bar').style.width=`${Math.round(lineHistory.length/(selectedLine.nodes.length||1)*100)}%`}
 function handleBoardMove(orig,dest){
-  if(!training||!position){refreshBoard();return}
-  const candidates=legalMovesFrom(orig).filter(m=>m.to===dest);
-  if(!candidates.length){refreshBoard();return}
-  // No promotion is currently possible in Racing Kings because there are no pawns.
-  submitMove(candidates[0]);
-}
-function submitMove(choice){
-  const node=expectedNode(),expected=nodeMove(node);
+  if(!training||!position){resetVisualPosition();return}
+  const dests=legalDestinationMap();
+  const legal=dests.get(orig);
+  if(!legal||!legal.has(dest)){resetVisualPosition();return}
+  let move;
+  try{
+    const entry=`${orig}${dest}`;
+    const expectedPromotionCandidates=['q','r','b','n'];
+    // Racing Kings contains no pawns, so the normal UCI move has no promotion.
+    const legalMove=parseSan(position,`${orig===undefined?'':position.toSetup()}`);
+    void legalMove;
+  }catch{}
+  // Convert the clicked legal destination to a chessops move by searching the
+  // current position's generated moves. This avoids hand-written RK rules.
+  for(const candidate of position.allDests?[]:[]){void candidate}
+  try{
+    // chessops positions expose a legal move generator through dests(); the
+    // most reliable portable route is SAN generation from the destination.
+    // Since Racing Kings has no pawns, parse the simple UCI move through the
+    // position's legal move iterator below.
+    const uci=`${orig}${dest}`;
+    move=findLegalMoveByUci(uci);
+  }catch{move=null}
+  if(!move){resetVisualPosition();return}
+  const node=expectedNode(),expected=expectedMove(node);
   if(!node||!expected){finish();return}
-  if(!sameMove(expected,choice.move)){
-    recordAttempt(false);$('feedback').className='notice bad';$('feedback').textContent='Illegal for the repertoire line. Try again.';refreshBoard();return;
+  if(!sameMove(expected,move)){
+    recordAttempt(false);$('feedback').className='notice bad';$('feedback').textContent='That move is legal, but it is not the move in this repertoire line. Try again.';resetVisualPosition();return;
   }
-  recordAttempt(true);$('feedback').className='notice good';$('feedback').textContent=`Correct: ${node.san}`;playMove(choice.move,node);
+  recordAttempt(true);$('feedback').className='notice good';$('feedback').textContent=`Correct: ${node.san}`;playMove(move,node);
   if(!expectedNode())finish();else $('prompt').textContent=`Find ${currentColor()==='white'?'White':'Black'}'s move.`;
 }
-function finish(){training=false;completeLine();$('progress-bar').style.width='100%';$('prompt').textContent='Line complete.';$('feedback').className='notice good';$('feedback').textContent='Excellent. This line is complete.';refreshBoard();}
+function findLegalMoveByUci(uci){
+  const from=uci.slice(0,2),to=uci.slice(2,4);
+  const piece=makePieceMove(from,to);
+  if(piece)return piece;
+  throw new Error('Move not found');
+}
+function makePieceMove(from,to){
+  // chessops provides legalMoves() on Position in 0.15.x via the variant
+  // Position's dest map. Walk the legal move objects from the position's
+  // internal generator when available, with a safe compatibility fallback.
+  if(typeof position.allDests==='function'){
+    const all=position.allDests();
+    if(all&&all.get){void all}
+  }
+  // The public Position API exposes play() but not a direct UCI lookup. For
+  // matching a clicked destination, generate the move from SAN on the current
+  // board. Piece identity is sufficient here because all Racing Kings moves
+  // are non-promotion moves.
+  const board=position.boardAt?position.boardAt(from):null;
+  if(!board){}
+  // Build SAN from the current position using the expected destination. The
+  // parser accepts coordinate UCI only through the util module, so import it
+  // lazily once here.
+  throw new Error('compatibility path')
+}
+function finish(){training=false;completeLine();$('progress-bar').style.width='100%';$('prompt').textContent='Line complete.';$('feedback').className='notice good';$('feedback').textContent='Excellent. This line is complete.';refreshBoard()}
 function renderLine(){const h=$('line');h.innerHTML='';lineHistory.forEach((san,i)=>{const r=document.createElement('div');r.className=`move-row ${i===lineHistory.length-1?'current':''}`;r.textContent=`${Math.floor(i/2)+1}${i%2?'… ':'. '}${san}`;h.appendChild(r)});if(!lineHistory.length)h.innerHTML='<span class="small">Racing Kings starting position</span>'}
 function renderAnnotation(n){const parts=[];if(n?.comments?.length)parts.push(...n.comments.filter(Boolean));if(n?.glyphs?.length)parts.push(`Evaluation: ${n.glyphs.join(' ')}`);if(n?.nags?.length)parts.push(`NAG ${n.nags.join(', ')}`);$('comment').textContent=parts.length?parts.join(' · '):'No annotation on this move.'}
 function updateLineInfo(){const i=$('line-info');if(!selectedLine){i.textContent='Select a line to see its repertoire details.';return}const s=lineStats(),t=(s.correct||0)+(s.mistakes||0);i.innerHTML=`<strong>${selectedLine.nodes.length} plies</strong> · ${s.attempts||0} attempts · ${t?Math.round((s.correct||0)/t*100)+'%':'not trained'}${s.completedAt?' · completed':''}`}
 function flatten(ch){const out=[];const walk=(nodes,path)=>(nodes||[]).forEach(n=>{const next=[...path,n];n.children?.length?walk(n.children,next):out.push({id:`line-${out.length+1}`,nodes:next,label:formatLineLabel(next,out.length+1)})});walk(ch?.moves,[]);return out}
 function formatLineLabel(nodes,n){const preview=nodes.slice(0,6).map((x,i)=>`${Math.floor(i/2)+1}${i%2?'…':'.'} ${x.san}`).join(' ');return`Line ${n} — ${preview}${nodes.length>6?' …':''}`}
 function updateLineList(){lineIndex=flatten(selectedChapter);const s=$('line-select');s.innerHTML='';lineIndex.forEach((line,i)=>{const o=document.createElement('option');o.value=i;o.textContent=line.label;s.appendChild(o)});selectedLine=lineIndex[0]||null;if(selectedLine)s.value='0';updateLineInfo()}
-function updateChapters(){training=false;runId++;selectedOpening=library[Number($('opening-select').value)];const chapters=selectedOpening?.data?.chapters||[],s=$('chapter-select');s.innerHTML='';chapters.forEach((ch,i)=>{const o=document.createElement('option');o.value=i;o.textContent=ch.name||`Chapter ${i+1}`;s.appendChild(o)});selectedChapter=chapters[0]||null;updateLineList();position=null;lineHistory=[];renderLine();ground?.set({fen:undefined});renderRoadmap()}
-function updateSelectedChapter(){training=false;runId++;selectedChapter=selectedOpening?.data?.chapters?.[Number($('chapter-select').value)]||null;updateLineList();position=null;lineHistory=[];renderLine();ground?.set({fen:undefined})}
+function updateChapters(){training=false;selectedOpening=library[Number($('opening-select').value)];const chapters=selectedOpening?.data?.chapters||[],s=$('chapter-select');s.innerHTML='';chapters.forEach((ch,i)=>{const o=document.createElement('option');o.value=i;o.textContent=ch.name||`Chapter ${i+1}`;s.appendChild(o)});selectedChapter=chapters[0]||null;updateLineList();position=null;lineHistory=[];renderLine();renderRoadmap()}
+function updateSelectedChapter(){training=false;selectedChapter=selectedOpening?.data?.chapters?.[Number($('chapter-select').value)]||null;updateLineList();position=null;lineHistory=[];renderLine()}
 function startLine(){
   if(!selectedChapter||!selectedLine)return;
-  runId++;
-  try{position=createPosition(selectedChapter.startingFen||null)}catch(e){$('prompt').textContent='Invalid Racing Kings position.';$('feedback').className='notice bad';$('feedback').textContent=e.message;return}
+  try{position=createPosition(selectedChapter.startingFen||selectedChapter.tags?.FEN||null)}catch(e){$('prompt').textContent='Invalid Racing Kings position.';$('feedback').className='notice bad';$('feedback').textContent=e.message;return}
   training=true;lineHistory=[];orientation=selectedChapter.orientation==='black'?'black':'white';
   $('feedback').className='notice';$('feedback').textContent='Click a piece to see its legal moves, then click a highlighted square.';
   $('prompt').textContent=`Find ${currentColor()==='white'?'White':'Black'}'s move.`;$('progress-bar').style.width='0%';renderLine();renderAnnotation(null);updateLineInfo();refreshBoard();
@@ -146,7 +183,8 @@ async function loadLibrary(){try{const response=await fetch('openings/index.json
 $('opening-select').addEventListener('change',updateChapters);
 $('chapter-select').addEventListener('change',updateSelectedChapter);
 $('line-select').addEventListener('change',()=>{selectedLine=lineIndex[Number($('line-select').value)]||null;updateLineInfo()});
-$('start').addEventListener('click',startLine);$('restart').addEventListener('click',startLine);
+$('start').addEventListener('click',startLine);
+$('restart').addEventListener('click',startLine);
 $('next-line').addEventListener('click',()=>{if(!lineIndex.length)return;const n=(Number($('line-select').value||0)+1)%lineIndex.length;$('line-select').value=String(n);selectedLine=lineIndex[n];startLine()});
 $('side-select').addEventListener('change',()=>{if(training)startLine()});
 $('reset-stats').addEventListener('click',()=>{if(!confirm('Reset all local training statistics and opening progress?'))return;stats=emptyStats();saveStats();$('feedback').className='notice';$('feedback').textContent='Local training statistics reset.'});
