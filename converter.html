@@ -17,9 +17,9 @@
     <section class="tool-layout">
       <div class="card panel">
         <div class="field">
-          <label for="study-url">Public Lichess study URL</label>
-          <input id="study-url" inputmode="url" placeholder="https://lichess.org/study/XXXXXXXX" autocomplete="off">
-          <p class="small">Public studies can be fetched directly. Private or restricted studies can be exported from Lichess and pasted below.</p>
+          <label for="study-url">Public Lichess study or chapter URL</label>
+          <input id="study-url" inputmode="url" placeholder="https://lichess.org/study/XXXXXXXX or /XXXXXXXX/YYYYYYYY" autocomplete="off">
+          <p class="small">Paste either a whole public study link or a link to one specific chapter. Private or restricted studies can be exported from Lichess and pasted below.</p>
         </div>
         <div class="button-row">
           <button class="button primary" id="fetch-study" type="button">Fetch study PGN</button>
@@ -39,7 +39,7 @@
         <p class="eyebrow">OUTPUT FORMAT</p>
         <h3>Trainer JSON</h3>
         <p>Every move keeps its text comments, numeric NAGs, symbolic glyphs and child variations. The full branching tree is retained in the exported JSON.</p>
-        <div class="notice"><strong>Typical flow</strong><br><span class="small">Lichess study → PGN → JSON → <code>openings/</code> → Trainer</span></div>
+        <div class="notice"><strong>Typical flow</strong><br><span class="small">Lichess study/chapter → PGN → JSON → <code>openings/</code> → Trainer</span></div>
         <a class="button secondary download" id="download" style="display:none">Download JSON</a>
       </aside>
     </section>
@@ -248,19 +248,23 @@
 
     $('fetch-study').addEventListener('click', async () => {
       const url = $('study-url').value.trim();
-      const match = url.match(/(?:https?:\/\/)?(?:www\.)?lichess\.org\/study\/([A-Za-z0-9]{6,16})(?:[/?#].*)?$/i);
-      if (!match) { setStatus('Enter a valid public Lichess study URL.', 'bad'); return; }
+      const match = url.match(/(?:https?:\/\/)?(?:www\.)?lichess\.org\/study\/([A-Za-z0-9]{6,16})(?:\/([A-Za-z0-9]{6,16}))?(?:[/?#].*)?$/i);
+      if (!match) { setStatus('Enter a valid public Lichess study or chapter URL.', 'bad'); return; }
+      const studyId = match[1];
+      const chapterId = match[2] || null;
       try {
-        setStatus('Fetching the study PGN…');
-        const endpoint = `https://lichess.org/study/${match[1]}.pgn?comments=true&variations=true&clocks=true`; 
+        setStatus(chapterId ? 'Fetching the selected study chapter PGN…' : 'Fetching the study PGN…');
+        const endpoint = chapterId
+          ? `https://lichess.org/api/study/${studyId}/${chapterId}.pgn?comments=true&variations=true&clocks=true`
+          : `https://lichess.org/study/${studyId}.pgn?comments=true&variations=true&clocks=true`;
         const response = await fetch(endpoint, { headers: { Accept: 'application/x-chess-pgn' } });
         if (!response.ok) throw new Error(`Lichess returned HTTP ${response.status}.`);
         const pgn = await response.text();
         if (!pgn.trim()) throw new Error('The study returned an empty PGN.');
         $('pgn-input').value = pgn;
-        setStatus('Study PGN fetched. Review it, then convert to JSON.', 'good');
+        setStatus(chapterId ? 'Chapter PGN fetched. Review it, then convert to JSON.' : 'Study PGN fetched. Review it, then convert to JSON.', 'good');
       } catch (error) {
-        setStatus(`Could not fetch the study: ${error.message} You can paste the exported PGN manually instead.`, 'bad');
+        setStatus(`Could not fetch the study${chapterId ? ' chapter' : ''}: ${error.message} You can paste the exported PGN manually instead.`, 'bad');
       }
     });
 
