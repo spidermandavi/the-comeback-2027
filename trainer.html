@@ -15,627 +15,86 @@
 
   <main class="container">
     <section class="card panel roadmap-panel">
-      <div class="roadmap-heading">
-        <div>
-          <p class="eyebrow">OPENING JOURNEY</p>
-          <h3>Your repertoire</h3>
-          <p class="small">Each JSON opening is a lesson. Progress is based on complete lines you have finished, and the journey grows automatically when you add more openings.</p>
-        </div>
-        <div class="roadmap-total" id="roadmap-total">0%</div>
-      </div>
-      <div class="roadmap-track" aria-hidden="true"><div id="roadmap-total-bar"></div></div>
-      <div id="opening-roadmap" class="opening-roadmap" aria-label="Opening progress"></div>
+      <div class="roadmap-heading"><div><p class="eyebrow">OPENING JOURNEY</p><h3>Your repertoire</h3><p class="small">Each JSON opening is a lesson. Progress is based on complete lines you have finished.</p></div><div class="roadmap-total" id="roadmap-total">0%</div></div>
+      <div class="roadmap-track"><div id="roadmap-total-bar"></div></div><div id="opening-roadmap" class="opening-roadmap" aria-label="Opening progress"></div>
     </section>
 
     <section class="card panel" style="margin-top:16px">
-      <div class="training-header">
-        <div>
-          <p class="eyebrow">REPERTOIRE</p>
-          <h3 style="margin-bottom:4px">Choose an opening</h3>
-          <span class="small">Opening files are read from <code>openings/index.json</code>.</span>
-        </div>
-        <div style="min-width:min(100%,360px)">
-          <label for="opening-select" class="visually-hidden">Opening</label>
-          <select id="opening-select"><option>Loading openings…</option></select>
-        </div>
-      </div>
-      <div class="grid two" style="margin-top:4px">
-        <div class="field" style="margin-bottom:0">
-          <label for="chapter-select">Chapter</label>
-          <select id="chapter-select"><option>Loading…</option></select>
-        </div>
-        <div class="field" style="margin-bottom:0">
-          <label for="line-select">Line</label>
-          <select id="line-select"><option>Loading…</option></select>
-        </div>
-      </div>
-      <div class="grid two" style="margin-top:16px">
-        <div class="field" style="margin-bottom:0">
-          <label for="side-select">Train as</label>
-          <select id="side-select">
-            <option value="both">Both sides</option>
-            <option value="white">White</option>
-            <option value="black">Black</option>
-          </select>
-        </div>
-        <div class="notice compact" id="line-info">Select a line to see its repertoire details.</div>
-      </div>
-      <div class="button-row">
-        <button class="button primary" id="start" type="button">Start training</button>
-        <button class="button secondary" id="next-line" type="button">Next line</button>
-        <button class="button secondary" id="reset-stats" type="button">Reset local stats</button>
-      </div>
+      <div class="training-header"><div><p class="eyebrow">REPERTOIRE</p><h3 style="margin-bottom:4px">Choose an opening</h3><span class="small">Opening files are read from <code>openings/index.json</code>.</span></div><div style="min-width:min(100%,360px)"><label for="opening-select" class="visually-hidden">Opening</label><select id="opening-select"><option>Loading openings…</option></select></div></div>
+      <div class="grid two"><div class="field" style="margin-bottom:0"><label for="chapter-select">Chapter</label><select id="chapter-select"><option>Loading…</option></select></div><div class="field" style="margin-bottom:0"><label for="line-select">Line</label><select id="line-select"><option>Loading…</option></select></div></div>
+      <div class="grid two" style="margin-top:16px"><div class="field" style="margin-bottom:0"><label for="side-select">Train as</label><select id="side-select"><option value="both">Both sides</option><option value="white">White</option><option value="black">Black</option></select></div><div class="notice compact" id="line-info">Select a line to see its repertoire details.</div></div>
+      <div class="button-row"><button class="button primary" id="start" type="button">Start training</button><button class="button secondary" id="next-line" type="button">Next line</button><button class="button secondary" id="reset-stats" type="button">Reset local stats</button></div>
     </section>
 
-    <section class="stats" aria-label="Training statistics">
-      <div class="stat"><strong id="stat-correct">0</strong><span>Correct attempts</span></div>
-      <div class="stat"><strong id="stat-mistakes">0</strong><span>Mistakes</span></div>
-      <div class="stat"><strong id="stat-accuracy">—</strong><span>Accuracy</span></div>
-      <div class="stat"><strong id="stat-lifetime">0</strong><span>Lines tracked</span></div>
-    </section>
+    <section class="stats" aria-label="Training statistics"><div class="stat"><strong id="stat-correct">0</strong><span>Correct attempts</span></div><div class="stat"><strong id="stat-mistakes">0</strong><span>Mistakes</span></div><div class="stat"><strong id="stat-accuracy">—</strong><span>Accuracy</span></div><div class="stat"><strong id="stat-lifetime">0</strong><span>Lines tracked</span></div></section>
 
-    <section class="board-wrap">
-      <div>
-        <div id="board" class="board" aria-label="Racing Kings training board"></div>
-        <div style="margin-top:12px" class="progress" aria-label="Current line progress"><div id="progress-bar"></div></div>
-      </div>
-      <aside class="board-side">
-        <div class="card panel">
-          <p class="eyebrow">YOUR MOVE</p>
-          <h3 id="prompt">Select an opening and start.</h3>
-          <p id="feedback" class="notice" role="status">The board becomes interactive when training starts.</p>
-          <div class="button-row"><button class="button secondary" id="restart" type="button">Restart line</button></div>
-        </div>
-        <div class="card panel">
-          <p class="eyebrow">LINE</p>
-          <div id="line" class="line"><span class="small">No line loaded.</span></div>
-        </div>
-        <div class="card panel">
-          <p class="eyebrow">ANNOTATION</p>
-          <p id="comment" class="small">Move notes will appear here when you reach the annotated move.</p>
-        </div>
-      </aside>
-    </section>
+    <section class="board-wrap"><div><div id="board" class="board" aria-label="Racing Kings training board"></div><div style="margin-top:12px" class="progress" aria-label="Current line progress"><div id="progress-bar"></div></div></div><aside class="board-side">
+      <div class="card panel"><p class="eyebrow">YOUR MOVE</p><h3 id="prompt">Select an opening and start.</h3><p id="feedback" class="notice" role="status">The board becomes interactive when training starts.</p><div class="button-row"><button class="button secondary" id="restart" type="button">Restart line</button></div></div>
+      <div class="card panel"><p class="eyebrow">LINE</p><div id="line" class="line"><span class="small">No line loaded.</span></div></div>
+      <div class="card panel"><p class="eyebrow">ANNOTATION</p><p id="comment" class="small">Move notes will appear here when you reach the annotated move.</p></div>
+    </aside></section>
   </main>
   <footer>Training statistics are stored in this browser and remain until you reset them.</footer>
 
-  <div id="promotion-modal" class="promotion-modal" hidden>
-    <div class="promotion-card" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
-      <p class="eyebrow">PROMOTION</p>
-      <h3 id="promotion-title">Choose a piece</h3>
-      <div id="promotion-buttons" class="promotion-buttons"></div>
-      <button class="button secondary" id="promotion-cancel" type="button">Cancel</button>
-    </div>
-  </div>
+  <div id="promotion-modal" class="promotion-modal" hidden><div class="promotion-card" role="dialog" aria-modal="true" aria-labelledby="promotion-title"><p class="eyebrow">PROMOTION</p><h3 id="promotion-title">Choose a piece</h3><div id="promotion-buttons" class="promotion-buttons"></div><button class="button secondary" id="promotion-cancel" type="button">Cancel</button></div></div>
 
   <script type="module">
     import { parseFen, makeFen } from 'https://esm.sh/chessops@0.15.1/fen';
-    import { parseUci } from 'https://esm.sh/chessops@0.15.1';
     import { parseSan } from 'https://esm.sh/chessops@0.15.1/san';
-    import { defaultPosition, RacingKings } from 'https://esm.sh/chessops@0.15.1/variant';
-    import { lichessRules } from 'https://esm.sh/chessops@0.15.1/compat';
+    import { RacingKings } from 'https://esm.sh/chessops@0.15.1/variant';
+    import { parseUci } from 'https://esm.sh/chessops@0.15.1/util';
 
-    const $ = id => document.getElementById(id);
-    const PIECES = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟', K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙' };
-    const PROMOTION_PIECES = { q:'Queen', r:'Rook', b:'Bishop', n:'Knight' };
-    const STATS_KEY = 'comeback2027-training-stats-v2';
+    const $=id=>document.getElementById(id);
+    const PIECES={k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘'};
+    const PROMOTION_PIECES={q:'Queen',r:'Rook',b:'Bishop',n:'Knight'};
+    const STATS_KEY='comeback2027-training-stats-v2';
+    let library=[],selectedOpening=null,selectedChapter=null,selectedLine=null,lineIndex=[],position=null,orientation='white',selectedSquare=null,training=false,lineHistory=[],stats=loadStats(),session=stats.session,opponentTimer=null,promotionState=null,runId=0;
 
-    let library = [];
-    let selectedOpening = null;
-    let selectedChapter = null;
-    let selectedLine = null;
-    let lineIndex = [];
-    let position = null;
-    let orientation = 'white';
-    let selectedSquare = null;
-    let training = false;
-    let lineHistory = [];
-    let stats = loadStats();
-    let session = stats.session;
-    let opponentTimer = null;
-    let promotionState = null;
-    let runId = 0;
+    function emptyStats(){return{version:3,global:{correct:0,mistakes:0},session:{correct:0,mistakes:0},byLine:{}};}
+    function loadStats(){try{const raw=JSON.parse(localStorage.getItem(STATS_KEY));if(raw?.global&&raw?.byLine)return{version:3,global:{correct:+raw.global.correct||0,mistakes:+raw.global.mistakes||0},session:{correct:+(raw.session?.correct??raw.global.correct)||0,mistakes:+(raw.session?.mistakes??raw.global.mistakes)||0},byLine:typeof raw.byLine==='object'&&raw.byLine?raw.byLine:{}};}catch{}return emptyStats();}
+    function saveStats(){stats.session={correct:session.correct,mistakes:session.mistakes};try{localStorage.setItem(STATS_KEY,JSON.stringify(stats));}catch{}updateStats();renderOpeningRoadmap();}
+    function lineKey(line=selectedLine,opening=selectedOpening,chapter=selectedChapter){if(!opening||!chapter||!line)return null;return[opening.file,chapter.id||chapter.name,line.id||line.nodes.map(n=>n.san).join(' ')].map(String).join('::');}
+    function getLineStats(line=selectedLine,opening=selectedOpening,chapter=selectedChapter){const key=lineKey(line,opening,chapter);if(!key)return{correct:0,mistakes:0,attempts:0,completedAt:null};const r=stats.byLine[key]||{};return{correct:+r.correct||0,mistakes:+r.mistakes||0,attempts:+r.attempts||0,completedAt:r.completedAt||null};}
+    function recordAttempt(correct){session[correct?'correct':'mistakes']++;stats.global[correct?'correct':'mistakes']++;const key=lineKey();if(key){const e=stats.byLine[key]||{correct:0,mistakes:0,attempts:0};e[correct?'correct':'mistakes']=Number(e[correct?'correct':'mistakes'])+1;e.attempts=Number(e.attempts)+1;e.lastAttempt=new Date().toISOString();stats.byLine[key]=e;}saveStats();updateLineInfo();}
+    function markLineCompleted(){const key=lineKey();if(!key)return;const e=stats.byLine[key]||{correct:0,mistakes:0,attempts:0};if(!e.completedAt)e.completedAt=new Date().toISOString();e.completions=(Number(e.completions)||0)+1;stats.byLine[key]=e;saveStats();}
+    function updateStats(){const total=stats.global.correct+stats.global.mistakes;$('stat-correct').textContent=stats.global.correct;$('stat-mistakes').textContent=stats.global.mistakes;$('stat-accuracy').textContent=total?`${Math.round(stats.global.correct/total*100)}%`:'—';$('stat-lifetime').textContent=Object.values(stats.byLine).filter(v=>v?.completedAt).length;}
 
-    function emptyStats() {
-      return { version: 3, global: { correct: 0, mistakes: 0 }, session: { correct: 0, mistakes: 0 }, byLine: {} };
-    }
+    function createPosition(fen){try{return fen?RacingKings.fromSetup(parseFen(fen).unwrap()).unwrap():RacingKings.default();}catch(error){throw new Error(fen?`Invalid Racing Kings starting FEN: ${error.message||error}`:`Could not create the Racing Kings starting position: ${error.message||error}`);}}
+    function boardArray(){const board=Array(64).fill(null),rows=makeFen(position.toSetup()).split(' ')[0].split('/');for(let rank=0;rank<8;rank++){let file=0;for(const ch of rows[rank]){if(/\d/.test(ch))file+=+ch;else board[(7-rank)*8+file++]=ch;}}return board;}
+    function squareIndex(s){return/^[a-h][1-8]$/.test(s)?(Number(s[1])-1)*8+s.charCodeAt(0)-97:null;}
+    function squareName(i){return String.fromCharCode(97+i%8)+(Math.floor(i/8)+1);}
+    function pieceAt(s){const i=squareIndex(s);return i==null||!position?null:boardArray()[i];}
+    function legalMovesFrom(from){if(!position||squareIndex(from)==null)return[];const piece=pieceAt(from);if(!piece)return[];if((piece===piece.toUpperCase())!==(position.turn==='white'))return[];const out=[];for(let to=0;to<64;to++){const target=squareName(to),m=parseUci(`${from}${target}`);if(m&&position.isLegal(m))out.push({from,to:target,promotion:null});for(const p of ['q','r','b','n']){const pm=parseUci(`${from}${target}${p}`);if(pm&&position.isLegal(pm))out.push({from,to:target,promotion:p});}}return out;}
+    function legalTargets(from){return[...new Set(legalMovesFrom(from).map(m=>m.to))];}
+    function sameMove(a,b){return a&&b&&a.from===b.from&&a.to===b.to&&(a.promotion||null)===(b.promotion||null);}
+    function nodeMove(node,pos){if(!node)return null;try{return parseSan(pos,node.san);}catch{return null;}}
 
-    function loadStats() {
-      try {
-        const raw = JSON.parse(localStorage.getItem(STATS_KEY));
-        if (raw && raw.global && raw.byLine) {
-          return {
-            version: 3,
-            global: { correct: Number(raw.global.correct) || 0, mistakes: Number(raw.global.mistakes) || 0 },
-            session: { correct: Number(raw.session?.correct ?? raw.global.correct) || 0, mistakes: Number(raw.session?.mistakes ?? raw.global.mistakes) || 0 },
-            byLine: typeof raw.byLine === 'object' && raw.byLine ? raw.byLine : {}
-          };
-        }
-      } catch {}
-      return emptyStats();
-    }
+    function renderBoard(){const wrap=$('board');wrap.innerHTML='';if(!position)return;const board=boardArray(),files=orientation==='white'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0],ranks=orientation==='white'?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7],targets=new Set(selectedSquare?legalTargets(selectedSquare):[]);for(const rank of ranks)for(const file of files){const idx=rank*8+file,sq=String.fromCharCode(97+file)+(rank+1),cell=document.createElement('button');cell.type='button';cell.className=`square ${((file+rank)%2===0)?'light':'dark'}`;cell.dataset.square=sq;cell.setAttribute('aria-label',sq);if(selectedSquare===sq)cell.classList.add('selected');if(targets.has(sq)){cell.classList.add('target');if(board[idx])cell.classList.add('capture-target');}if(board[idx]){const p=document.createElement('span');p.className=`piece ${board[idx]===board[idx].toUpperCase()?'white':'black'}`;p.textContent=PIECES[board[idx]]||board[idx];cell.appendChild(p);}if(file===files[0]){const c=document.createElement('span');c.className='coords rank';c.textContent=rank+1;cell.appendChild(c);}if(rank===ranks[ranks.length-1]){const c=document.createElement('span');c.className='coords file';c.textContent=String.fromCharCode(97+file);cell.appendChild(c);}cell.addEventListener('click',()=>clickSquare(sq));wrap.appendChild(cell);}}
+    function renderLine(){const h=$('line');h.innerHTML='';lineHistory.forEach((san,i)=>{const r=document.createElement('div');r.className=`move-row ${i===lineHistory.length-1?'current':''}`;r.textContent=`${Math.floor(i/2)+1}${i%2?'… ':'. '}${san}`;h.appendChild(r);});if(!lineHistory.length)h.innerHTML='<span class="small">Starting position</span>';}
+    function renderAnnotation(node){const parts=[];if(node?.glyphs?.length)parts.push(`Evaluation: ${node.glyphs.join(' ')}`);if(node?.nags?.length)parts.push(`NAG ${node.nags.join(', ')}`);if(node?.comments?.length)parts.push(...node.comments.filter(Boolean));$('comment').textContent=parts.length?parts.join(' · '):'No annotation on this move.';}
+    function playMove(move,node){position=position.play(move);lineHistory.push(node.san);renderBoard();renderLine();renderAnnotation(node);const total=selectedLine?.nodes?.length||1;$('progress-bar').style.width=`${Math.round(lineHistory.length/total*100)}%`;}
+    function clearOpponentTimer(){if(opponentTimer){clearTimeout(opponentTimer);opponentTimer=null;}}
+    function expectedNode(){return selectedLine?.nodes?.[lineHistory.length]||null;}
+    function finishLine(){training=false;clearOpponentTimer();markLineCompleted();$('progress-bar').style.width='100%';$('prompt').textContent='Line complete.';$('feedback').className='notice good';$('feedback').textContent='Excellent. This repertoire line is now marked complete.';}
+    function autoOpponent(){clearOpponentTimer();if(!training||!position||$('side-select').value==='both')return;const trainSide=$('side-select').value,side=position.turn==='white'?'white':'black';if(side===trainSide)return;const node=expectedNode(),move=nodeMove(node,position);if(!node||!move)return;const run=runId;opponentTimer=setTimeout(()=>{if(!training||run!==runId)return;playMove(move,node);if(!expectedNode())finishLine();else $('prompt').textContent=`Find ${position.turn==='white'?'White':'Black'}'s move.`;},230);}
+    function submitUserMove(move){const node=expectedNode(),expected=nodeMove(node,position);if(!node||!expected||!sameMove(expected,move)){recordAttempt(false);$('feedback').className='notice bad';$('feedback').textContent='Not the selected repertoire move. Try again.';selectedSquare=null;renderBoard();return;}recordAttempt(true);$('feedback').className='notice good';$('feedback').textContent=`Correct: ${node.san}`;selectedSquare=null;playMove(move,node);if(!expectedNode())finishLine();else{autoOpponent();if($('side-select').value==='both')$('prompt').textContent=`Find ${position.turn==='white'?'White':'Black'}'s move.`;}}
+    function clickSquare(sq){if(!training||!position)return;const desired=$('side-select').value;if(desired!=='both'&&desired!==position.turn)return;if(!selectedSquare){if(legalMovesFrom(sq).length){selectedSquare=sq;renderBoard();}return;}if(sq===selectedSquare){selectedSquare=null;renderBoard();return;}const candidates=legalMovesFrom(selectedSquare).filter(m=>m.to===sq);if(!candidates.length){selectedSquare=legalMovesFrom(sq).length?sq:null;renderBoard();return;}if(candidates.length>1){showPromotionDialog(selectedSquare,sq,candidates);return;}submitUserMove(candidates[0]);}
+    function showPromotionDialog(from,to,candidates){promotionState={from,to,candidates,run:runId};const box=$('promotion-buttons');box.innerHTML='';const white=position.turn==='white';candidates.forEach(c=>{const b=document.createElement('button');b.className='button secondary promotion-choice';b.type='button';const p=white?c.promotion.toUpperCase():c.promotion;b.textContent=`${PIECES[p]} ${PROMOTION_PIECES[c.promotion]}`;b.onclick=()=>{if(!promotionState||promotionState.run!==runId)return;hidePromotionDialog();submitUserMove(c);};box.appendChild(b);});$('promotion-modal').hidden=false;box.querySelector('button')?.focus();}
+    function hidePromotionDialog(){promotionState=null;$('promotion-modal').hidden=true;}
+    function startLine(){if(!selectedChapter||!selectedLine)return;clearOpponentTimer();hidePromotionDialog();runId++;try{position=createPosition(selectedChapter.startingFen||null);}catch(error){$('prompt').textContent='Invalid opening position.';$('feedback').className='notice bad';$('feedback').textContent=error.message;return;}training=true;lineHistory=[];orientation=selectedChapter.orientation==='black'?'black':($('side-select').value==='black'?'black':'white');selectedSquare=null;$('feedback').className='notice';$('feedback').textContent='Select a piece to begin.';$('prompt').textContent=`Find ${position.turn==='white'?'White':'Black'}'s move.`;$('progress-bar').style.width='0%';renderBoard();renderLine();renderAnnotation(null);updateLineInfo();autoOpponent();}
 
-    function saveStats() {
-      stats.session = { correct: session.correct, mistakes: session.mistakes };
-      try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }
-      catch {
-        $('feedback').className = 'notice bad';
-        $('feedback').textContent = 'Browser storage is unavailable, so statistics cannot be saved on this device.';
-      }
-      updateStats();
-      renderOpeningRoadmap();
-    }
+    function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+    function flattenLines(chapter){const out=[];const walk=(nodes,prefix)=>{(nodes||[]).forEach(n=>{const path=[...prefix,n];if(n.children?.length)walk(n.children,path);else out.push({id:`line-${out.length+1}`,nodes:path});});};walk(chapter?.moves,[]);return out;}
+    function updateLineList(){lineIndex=flattenLines(selectedChapter);const sel=$('line-select');sel.innerHTML='';if(!lineIndex.length){sel.innerHTML='<option>No lines found</option>';selectedLine=null;return;}lineIndex.forEach((line,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`Line ${i+1} — ${line.nodes.slice(0,6).map((n,j)=>`${Math.floor(j/2)+1}${j%2?'…':'.'} ${n.san}`).join(' ')}${line.nodes.length>6?' …':''}`;sel.appendChild(o);});sel.value='0';selectedLine=lineIndex[0];updateLineInfo();}
+    function updateLineInfo(){if(!selectedLine){$('line-info').textContent='Select a line to see its repertoire details.';return;}const s=getLineStats(),total=s.correct+s.mistakes,accuracy=total?`${Math.round(s.correct/total*100)}%`:'not trained';$('line-info').innerHTML=`<strong>${selectedLine.nodes.length} plies</strong> · ${s.attempts} attempts · ${accuracy}${s.completedAt?' · completed':''}`;}
+    function openingProgress(item){const all=(item?.data?.chapters||[]).flatMap(ch=>flattenLines(ch).map(line=>({line,chapter:ch}))),done=all.filter(x=>getLineStats(x.line,item,x.chapter).completedAt).length;return{total:all.length,done,percent:all.length?Math.round(done/all.length*100):0};}
+    function renderOpeningRoadmap(){const h=$('opening-roadmap');h.innerHTML='';if(!library.length)return;let total=0,done=0;library.forEach((item,i)=>{const p=openingProgress(item);total+=p.total;done+=p.done;const b=document.createElement('button');b.type='button';b.className=`opening-lesson ${item===selectedOpening?'selected':''}${p.percent===100?' complete':''}`;b.innerHTML=`<span class="lesson-number">${i+1}</span><span class="lesson-name">${escapeHtml(item.name||item.file)}</span><span class="lesson-count">${p.done}/${p.total} lines</span><span class="lesson-progress"><span style="width:${p.percent}%"></span></span><span class="lesson-percent">${p.percent}%</span>`;b.onclick=()=>{$('opening-select').value=i;updateChapters();};h.appendChild(b);});const overall=total?Math.round(done/total*100):0;$('roadmap-total').textContent=`${overall}%`;$('roadmap-total-bar').style.width=`${overall}%`;}
+    function updateChapters(){clearOpponentTimer();hidePromotionDialog();training=false;runId++;selectedOpening=library[Number($('opening-select').value)];const chapters=selectedOpening?.data?.chapters||[],sel=$('chapter-select');sel.innerHTML='';chapters.forEach((ch,i)=>{const o=document.createElement('option');o.value=i;o.textContent=ch.name||`Chapter ${i+1}`;sel.appendChild(o);});selectedChapter=chapters[0]||null;updateLineList();position=null;selectedSquare=null;lineHistory=[];renderBoard();renderLine();renderOpeningRoadmap();}
+    function updateSelectedChapter(){clearOpponentTimer();hidePromotionDialog();training=false;runId++;selectedChapter=selectedOpening?.data?.chapters?.[Number($('chapter-select').value)]||null;updateLineList();position=null;selectedSquare=null;lineHistory=[];renderBoard();renderLine();}
+    async function loadLibrary(){try{const r=await fetch('openings/index.json',{cache:'no-store'});if(!r.ok)throw new Error(`Could not load openings/index.json (HTTP ${r.status}).`);const index=await r.json();if(index.schemaVersion!==1||!Array.isArray(index.openings))throw new Error('openings/index.json has an invalid schema.');library=await Promise.all(index.openings.map(async e=>{const rr=await fetch(`openings/${e.file.split('/').map(encodeURIComponent).join('/')}`,{cache:'no-store'});if(!rr.ok)throw new Error(`Could not load ${e.file} (HTTP ${rr.status}).`);const data=await rr.json();if(data.schemaVersion!==1||data.variant!=='racingKings'||!Array.isArray(data.chapters))throw new Error(`${e.file} is not a valid Racing Kings opening file.`);return{...e,data};}));const sel=$('opening-select');sel.innerHTML='';library.forEach((x,i)=>{const o=document.createElement('option');o.value=i;o.textContent=x.name||x.file;sel.appendChild(o);});if(!library.length)throw new Error('No opening files are registered.');updateChapters();renderOpeningRoadmap();}catch(error){$('opening-select').innerHTML='<option>Could not load openings</option>';$('prompt').textContent='Opening library unavailable.';$('feedback').className='notice bad';$('feedback').textContent=error.message||String(error);}}
 
-    function lineKey(line = selectedLine, opening = selectedOpening, chapter = selectedChapter) {
-      if (!opening || !chapter || !line) return null;
-      return [opening.file, chapter.id || chapter.name, line.id || line.nodes.map(n => n.san).join(' ')].map(String).join('::');
-    }
-
-    function getLineStats(line = selectedLine, opening = selectedOpening, chapter = selectedChapter) {
-      const key = lineKey(line, opening, chapter);
-      if (!key) return { correct: 0, mistakes: 0, attempts: 0, completedAt: null };
-      const raw = stats.byLine[key] || {};
-      return {
-        correct: Number(raw.correct) || 0,
-        mistakes: Number(raw.mistakes) || 0,
-        attempts: Number(raw.attempts) || 0,
-        completedAt: raw.completedAt || null
-      };
-    }
-
-    function recordAttempt(correct) {
-      session[correct ? 'correct' : 'mistakes']++;
-      stats.global[correct ? 'correct' : 'mistakes']++;
-      const key = lineKey();
-      if (key) {
-        const entry = stats.byLine[key] || { correct: 0, mistakes: 0, attempts: 0 };
-        entry[correct ? 'correct' : 'mistakes'] = Number(entry[correct ? 'correct' : 'mistakes']) + 1;
-        entry.attempts = Number(entry.attempts) + 1;
-        entry.lastAttempt = new Date().toISOString();
-        stats.byLine[key] = entry;
-      }
-      saveStats();
-      updateLineInfo();
-    }
-
-    function markLineCompleted() {
-      const key = lineKey();
-      if (!key) return;
-      const entry = stats.byLine[key] || { correct: 0, mistakes: 0, attempts: 0 };
-      if (!entry.completedAt) entry.completedAt = new Date().toISOString();
-      entry.completions = (Number(entry.completions) || 0) + 1;
-      stats.byLine[key] = entry;
-      saveStats();
-    }
-
-    function updateStats() {
-      const total = stats.global.correct + stats.global.mistakes;
-      $('stat-correct').textContent = stats.global.correct;
-      $('stat-mistakes').textContent = stats.global.mistakes;
-      $('stat-accuracy').textContent = total ? `${Math.round(stats.global.correct / total * 100)}%` : '—';
-      $('stat-lifetime').textContent = Object.values(stats.byLine).filter(v => v && v.completedAt).length;
-    }
-
-    function createPosition(fen) {
-      try {
-        if (fen) return RacingKings.fromSetup(parseFen(fen).unwrap()).unwrap();
-        return defaultPosition(lichessRules('racingKings')).unwrap();
-      } catch (error) {
-        throw new Error(fen ? `Invalid Racing Kings starting FEN: ${error.message || error}` : `Could not create the Racing Kings starting position: ${error.message || error}`);
-      }
-    }
-
-    function fenBoard(fen) {
-      const board = Array.from({ length: 64 }, () => null);
-      const rows = fen.split(' ')[0].split('/');
-      if (rows.length !== 8) throw new Error('Invalid board position.');
-      for (let rank = 0; rank < 8; rank++) {
-        let file = 0;
-        for (const ch of rows[rank]) {
-          if (/\d/.test(ch)) file += Number(ch);
-          else if (file < 8) board[(7-rank)*8 + file++] = ch;
-        }
-        if (file !== 8) throw new Error('Invalid board position.');
-      }
-      return board;
-    }
-
-    function renderBoard() {
-      const wrap = $('board');
-      wrap.innerHTML = '';
-      if (!position) return;
-      let board;
-      try { board = fenBoard(makeFen(position.toSetup())); }
-      catch { $('feedback').className = 'notice bad'; $('feedback').textContent = 'The position could not be rendered.'; return; }
-      const files = orientation === 'white' ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
-      const ranks = orientation === 'white' ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
-      for (const rank of ranks) for (const file of files) {
-        const idx = rank * 8 + file;
-        const sq = String.fromCharCode(97 + file) + (rank + 1);
-        const cell = document.createElement('button');
-        cell.type = 'button';
-        cell.className = `square ${((file + rank) % 2 === 0) ? 'light' : 'dark'}`;
-        cell.dataset.square = sq;
-        cell.setAttribute('aria-label', sq);
-        if (selectedSquare === sq) cell.classList.add('selected');
-        if (selectedSquare && legalTargets(selectedSquare).includes(sq)) cell.classList.add('target');
-        if (board[idx]) {
-          const piece = document.createElement('span');
-          piece.className = `piece ${board[idx] === board[idx].toUpperCase() ? 'white' : 'black'}`;
-          piece.textContent = PIECES[board[idx]] || board[idx];
-          cell.appendChild(piece);
-        }
-        if (file === files[0]) { const c = document.createElement('span'); c.className='coords rank'; c.textContent=rank+1; cell.appendChild(c); }
-        if (rank === ranks[ranks.length-1]) { const c = document.createElement('span'); c.className='coords file'; c.textContent=String.fromCharCode(97+file); cell.appendChild(c); }
-        cell.addEventListener('click', () => clickSquare(sq));
-        wrap.appendChild(cell);
-      }
-    }
-
-    function parseSquare(name) { return /^[a-h][1-8]$/.test(name) ? (Number(name[1])-1)*8 + name.charCodeAt(0)-97 : null; }
-    function squareName(index) { return String.fromCharCode(97 + index % 8) + (Math.floor(index / 8) + 1); }
-
-    function legalMovesFrom(from) {
-      if (!position || parseSquare(from) == null) return [];
-      const result = [];
-      for (let to = 0; to < 64; to++) {
-        const target = squareName(to);
-        const basic = parseUci(`${from}${target}`);
-        if (basic && position.isLegal(basic)) result.push({ from, to: target, uci: `${from}${target}`, promotion: null });
-        for (const promotion of ['q','r','b','n']) {
-          const promoted = parseUci(`${from}${target}${promotion}`);
-          if (promoted && position.isLegal(promoted)) result.push({ from, to: target, uci: `${from}${target}${promotion}`, promotion });
-        }
-      }
-      return result;
-    }
-
-    function legalTargets(from) { return [...new Set(legalMovesFrom(from).map(move => move.to))]; }
-    function sameMove(a, b) { return a && b && a.from === b.from && a.to === b.to && (a.promotion || null) === (b.promotion || null); }
-
-    function nodeMove(node, pos) {
-      if (!node) return null;
-      try { return parseSan(pos, node.san); } catch { return null; }
-    }
-
-    function flattenLines(chapter) {
-      const result = [];
-      const walk = (nodes, prefix) => {
-        if (!nodes?.length) return;
-        nodes.forEach(node => {
-          const path = [...prefix, node];
-          if (!node.children?.length) result.push({ id: `line-${result.length + 1}`, nodes: path, san: path.map(n => n.san), label: formatLineLabel(path, result.length + 1) });
-          else walk(node.children, path);
-        });
-      };
-      walk(chapter?.moves || [], []);
-      return result;
-    }
-
-    function formatLineLabel(nodes, number) {
-      const preview = nodes.slice(0, 6).map((n, i) => `${Math.floor(i/2)+1}${i%2 ? '…' : '.'} ${n.san}`).join(' ');
-      return `Line ${number} — ${preview}${nodes.length > 6 ? ' …' : ''}`;
-    }
-
-    function updateLineList() {
-      lineIndex = flattenLines(selectedChapter);
-      const select = $('line-select');
-      select.innerHTML = '';
-      if (!lineIndex.length) {
-        select.innerHTML = '<option value="">No lines found</option>';
-        selectedLine = null;
-        $('line-info').textContent = 'This chapter contains no playable moves.';
-        return;
-      }
-      lineIndex.forEach((line, i) => {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = line.label;
-        select.appendChild(option);
-      });
-      selectedLine = lineIndex[0];
-      updateLineInfo();
-    }
-
-    function updateLineInfo() {
-      const info = $('line-info');
-      if (!selectedLine) { info.textContent = 'Select a line to see its repertoire details.'; return; }
-      const lineStats = getLineStats();
-      const total = lineStats.correct + lineStats.mistakes;
-      const accuracy = total ? `${Math.round(lineStats.correct / total * 100)}%` : 'not trained';
-      const complete = lineStats.completedAt ? ' · completed' : '';
-      info.innerHTML = `<strong>${selectedLine.nodes.length} plies</strong> · ${lineStats.attempts} attempts · ${accuracy}${complete}`;
-    }
-
-    function renderAnnotation(node) {
-      const comments = Array.isArray(node?.comments) ? node.comments.filter(Boolean) : [];
-      const glyphs = Array.isArray(node?.glyphs) ? node.glyphs : [];
-      const nags = Array.isArray(node?.nags) ? node.nags : [];
-      const parts = [];
-      if (glyphs.length) parts.push(`Evaluation: ${glyphs.join(' ')}`);
-      if (nags.length) parts.push(`NAG ${nags.join(', ')}`);
-      if (comments.length) parts.push(...comments);
-      $('comment').textContent = parts.length ? parts.join(' · ') : 'No annotation on this move.';
-    }
-
-    function playMove(move, node) {
-      position = position.play(move);
-      lineHistory.push(node.san);
-      renderBoard();
-      renderLine();
-      renderAnnotation(node);
-      const totalPlies = selectedLine?.nodes?.length || 1;
-      const progress = Math.min(100, Math.round(lineHistory.length / totalPlies * 100));
-      $('progress-bar').style.width = `${progress}%`;
-    }
-
-    function clearOpponentTimer() { if (opponentTimer) { clearTimeout(opponentTimer); opponentTimer = null; } }
-    function expectedNode() { return selectedLine?.nodes?.[lineHistory.length] || null; }
-
-    function autoOpponent() {
-      clearOpponentTimer();
-      if (!training || !position || $('side-select').value === 'both') return;
-      const trainSide = $('side-select').value;
-      const side = position.turn === 'white' ? 'white' : 'black';
-      if (side === trainSide) return;
-      const node = expectedNode();
-      const move = nodeMove(node, position);
-      if (!node || !move) return;
-      const expectedRun = runId;
-      opponentTimer = setTimeout(() => {
-        opponentTimer = null;
-        if (!training || expectedRun !== runId || !position) return;
-        playMove(move, node);
-        if (!expectedNode()) finishLine();
-        else $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
-      }, 230);
-    }
-
-    function finishLine() {
-      training = false;
-      clearOpponentTimer();
-      markLineCompleted();
-      $('progress-bar').style.width = '100%';
-      $('prompt').textContent = 'Line complete.';
-      $('feedback').className = 'notice good';
-      $('feedback').textContent = 'Excellent. This repertoire line is now marked complete.';
-      updateLineInfo();
-      renderOpeningRoadmap();
-    }
-
-    function clickSquare(sq) {
-      if (!training || !position) return;
-      const desiredTurn = $('side-select').value;
-      if (desiredTurn !== 'both' && desiredTurn !== position.turn) return;
-      if (!selectedSquare) {
-        if (legalMovesFrom(sq).length) { selectedSquare = sq; renderBoard(); }
-        return;
-      }
-      if (sq === selectedSquare) { selectedSquare = null; renderBoard(); return; }
-      const candidates = legalMovesFrom(selectedSquare).filter(move => move.to === sq);
-      if (!candidates.length) { selectedSquare = null; renderBoard(); return; }
-      if (candidates.length > 1) { showPromotionDialog(selectedSquare, sq, candidates); return; }
-      submitUserMove(candidates[0]);
-    }
-
-    function submitUserMove(move) {
-      const node = expectedNode();
-      const expectedMove = nodeMove(node, position);
-      if (!node || !expectedMove || !sameMove(expectedMove, move)) {
-        recordAttempt(false);
-        $('feedback').className = 'notice bad';
-        $('feedback').textContent = 'Not the selected repertoire move. Try again.';
-        selectedSquare = null;
-        renderBoard();
-        return;
-      }
-      recordAttempt(true);
-      $('feedback').className = 'notice good';
-      $('feedback').textContent = `Correct: ${node.san}`;
-      selectedSquare = null;
-      playMove(move, node);
-      if (!expectedNode()) { finishLine(); return; }
-      autoOpponent();
-      if ($('side-select').value === 'both') $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
-    }
-
-    function showPromotionDialog(from, to, candidates) {
-      promotionState = { from, to, candidates, expectedRun: runId };
-      const buttons = $('promotion-buttons');
-      buttons.innerHTML = '';
-      const isWhite = position.turn === 'white';
-      candidates.forEach(candidate => {
-        const button = document.createElement('button');
-        button.className = 'button secondary promotion-choice';
-        button.type = 'button';
-        const p = isWhite ? candidate.promotion.toUpperCase() : candidate.promotion;
-        button.textContent = `${PIECES[p]} ${PROMOTION_PIECES[candidate.promotion]}`;
-        button.addEventListener('click', () => {
-          if (!promotionState || promotionState.expectedRun !== runId) return;
-          hidePromotionDialog();
-          submitUserMove(candidate);
-        });
-        buttons.appendChild(button);
-      });
-      $('promotion-modal').hidden = false;
-      buttons.querySelector('button')?.focus();
-    }
-
-    function hidePromotionDialog() { promotionState = null; $('promotion-modal').hidden = true; }
-
-    function renderLine() {
-      const holder = $('line'); holder.innerHTML = '';
-      lineHistory.forEach((san, i) => {
-        const row = document.createElement('div');
-        row.className = `move-row ${i === lineHistory.length - 1 ? 'current' : ''}`;
-        row.textContent = `${Math.floor(i/2)+1}${i%2 ? '… ' : '. '}${san}`;
-        holder.appendChild(row);
-      });
-      if (!lineHistory.length) holder.innerHTML = '<span class="small">Starting position</span>';
-    }
-
-    function startLine() {
-      if (!selectedChapter || !selectedLine) return;
-      clearOpponentTimer();
-      hidePromotionDialog();
-      runId++;
-      training = false;
-      try { position = createPosition(selectedChapter.startingFen || null); }
-      catch (error) {
-        $('prompt').textContent = 'Invalid opening position.';
-        $('feedback').className = 'notice bad';
-        $('feedback').textContent = error.message;
-        return;
-      }
-      training = true;
-      lineHistory = [];
-      orientation = $('side-select').value === 'black' ? 'black' : 'white';
-      selectedSquare = null;
-      $('feedback').className = 'notice';
-      $('feedback').textContent = 'Select a piece to begin.';
-      $('prompt').textContent = `Find ${position.turn === 'white' ? 'White' : 'Black'}'s move.`;
-      $('progress-bar').style.width = '0%';
-      renderBoard();
-      renderLine();
-      renderAnnotation(null);
-      updateLineInfo();
-      updateStats();
-      autoOpponent();
-    }
-
-    function linesForOpening(item) {
-      return (item?.data?.chapters || []).flatMap(chapter => flattenLines(chapter).map(line => ({ line, chapter })));
-    }
-
-    function openingProgress(item) {
-      const all = linesForOpening(item);
-      const completed = all.filter(({ line, chapter }) => getLineStats(line, item, chapter).completedAt).length;
-      return { total: all.length, completed, percent: all.length ? Math.round(completed / all.length * 100) : 0 };
-    }
-
-    function renderOpeningRoadmap() {
-      const holder = $('opening-roadmap');
-      holder.innerHTML = '';
-      if (!library.length) return;
-      let allLines = 0;
-      let completedLines = 0;
-      library.forEach((item, index) => {
-        const p = openingProgress(item);
-        allLines += p.total;
-        completedLines += p.completed;
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = `opening-lesson ${item === selectedOpening ? 'selected' : ''}${p.percent === 100 ? ' complete' : ''}`;
-        card.innerHTML = `<span class="lesson-number">${index + 1}</span><span class="lesson-name">${escapeHtml(item.name || item.file)}</span><span class="lesson-count">${p.completed}/${p.total} lines</span><span class="lesson-progress"><span style="width:${p.percent}%"></span></span><span class="lesson-percent">${p.percent}%</span>`;
-        card.addEventListener('click', () => {
-          $('opening-select').value = String(index);
-          updateChapters();
-          window.scrollTo({ top: $('opening-select').getBoundingClientRect().top + window.scrollY - 100, behavior: 'smooth' });
-        });
-        holder.appendChild(card);
-      });
-      const overall = allLines ? Math.round(completedLines / allLines * 100) : 0;
-      $('roadmap-total').textContent = `${overall}%`;
-      $('roadmap-total-bar').style.width = `${overall}%`;
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>'"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
-    }
-
-    async function loadLibrary() {
-      try {
-        const response = await fetch('openings/index.json', { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Could not load openings/index.json (HTTP ${response.status}).`);
-        const index = await response.json();
-        if (index.schemaVersion !== 1 || !Array.isArray(index.openings)) throw new Error('openings/index.json has an invalid schema.');
-        library = await Promise.all(index.openings.map(async entry => {
-          if (!entry?.file || typeof entry.file !== 'string') throw new Error('An opening index entry is missing its file name.');
-          const r = await fetch(`openings/${encodeURIComponent(entry.file).replace(/%2F/g, '/')}`, { cache: 'no-store' });
-          if (!r.ok) throw new Error(`Could not load ${entry.file} (HTTP ${r.status}).`);
-          const data = await r.json();
-          validateOpening(data, entry.file);
-          return { ...entry, data };
-        }));
-        const select = $('opening-select');
-        select.innerHTML = '';
-        library.forEach((item, i) => {
-          const option = document.createElement('option');
-          option.value = i;
-          option.textContent = item.name || item.file;
-          select.appendChild(option);
-        });
-        if (!library.length) throw new Error('No opening files are registered.');
-        updateChapters();
-        renderOpeningRoadmap();
-      } catch (error) {
-        $('opening-select').innerHTML = '<option>Could not load openings</option>';
-        $('prompt').textContent = 'Opening library unavailable.';
-        $('feedback').className = 'notice bad';
-        $('feedback').textContent = error.message || String(error);
-        training = false;
-      }
-    }
-
-    function validateOpening(data, file) {
-      if (!data || data.schemaVersion !== 1 || data.variant !== 'racingKings' || !Array.isArray(data.chapters)) throw new Error(`${file} is not a valid The Comeback 2027 Racing Kings opening file.`);
-      for (const chapter of data.chapters) {
-        if (!chapter || !Array.isArray(chapter.moves)) throw new Error(`${file} contains a chapter without a valid moves array.`);
-      }
-    }
-
-    function updateChapters() {
-      clearOpponentTimer(); hidePromotionDialog(); training = false; runId++;
-      selectedOpening = library[Number($('opening-select').value)];
-      const chapters = selectedOpening?.data?.chapters || [];
-      const cs = $('chapter-select'); cs.innerHTML = '';
-      chapters.forEach((chapter, i) => { const o = document.createElement('option'); o.value = i; o.textContent = chapter.name || `Chapter ${i+1}`; cs.appendChild(o); });
-      selectedChapter = chapters[0] || null;
-      updateLineList();
-      position = null; selectedSquare = null; lineHistory = [];
-      renderBoard(); renderLine(); updateStats(); renderOpeningRoadmap();
-    }
-
-    function updateSelectedChapter() {
-      clearOpponentTimer(); hidePromotionDialog(); training = false; runId++;
-      selectedChapter = selectedOpening?.data?.chapters?.[Number($('chapter-select').value)] || null;
-      updateLineList();
-      position = null; selectedSquare = null; lineHistory = [];
-      renderBoard(); renderLine();
-    }
-
-    $('opening-select').addEventListener('change', updateChapters);
-    $('chapter-select').addEventListener('change', updateSelectedChapter);
-    $('line-select').addEventListener('change', () => { selectedLine = lineIndex[Number($('line-select').value)] || null; updateLineInfo(); });
-    $('start').addEventListener('click', startLine);
-    $('restart').addEventListener('click', startLine);
-    $('next-line').addEventListener('click', chooseNextLine);
-    $('reset-stats').addEventListener('click', () => {
-      if (!window.confirm('Reset all local training statistics and opening progress?')) return;
-      stats = emptyStats();
-      session = { correct: 0, mistakes: 0 };
-      saveStats();
-      updateLineInfo();
-      $('feedback').className = 'notice';
-      $('feedback').textContent = 'Local training statistics reset.';
-    });
-    $('side-select').addEventListener('change', () => { if (training) startLine(); });
-    $('promotion-cancel').addEventListener('click', hidePromotionDialog);
-    $('promotion-modal').addEventListener('click', event => { if (event.target.id === 'promotion-modal') hidePromotionDialog(); });
-
-    function chooseNextLine() {
-      if (!lineIndex.length) return;
-      const current = Number($('line-select').value || 0);
-      const next = (current + 1) % lineIndex.length;
-      $('line-select').value = String(next);
-      selectedLine = lineIndex[next];
-      updateLineInfo();
-      startLine();
-    }
-
-    updateStats();
-    renderOpeningRoadmap();
-    loadLibrary();
+    $('opening-select').onchange=updateChapters;$('chapter-select').onchange=updateSelectedChapter;$('line-select').onchange=()=>{selectedLine=lineIndex[Number($('line-select').value)]||null;updateLineInfo();};$('start').onclick=startLine;$('restart').onclick=startLine;$('next-line').onclick=()=>{if(!lineIndex.length)return;const next=(Number($('line-select').value||0)+1)%lineIndex.length;$('line-select').value=next;selectedLine=lineIndex[next];startLine();};$('side-select').onchange=()=>{if(training)startLine();};$('reset-stats').onclick=()=>{if(!confirm('Reset all local training statistics and opening progress?'))return;stats=emptyStats();session={correct:0,mistakes:0};saveStats();updateLineInfo();};$('promotion-cancel').onclick=hidePromotionDialog;$('promotion-modal').onclick=e=>{if(e.target.id==='promotion-modal')hidePromotionDialog();};
+    updateStats();renderOpeningRoadmap();loadLibrary();
   </script>
 </body>
 </html>
