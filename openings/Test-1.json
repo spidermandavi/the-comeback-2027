@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "app": "The Comeback 2027",
+  "variant": "racingKings",
+  "convertedAt": "2026-09-06T06:21:17.680Z",
+  "source": "Lichess study PGN",
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "name": "Chapter 1",
+      "tags": {
+        "Event": "Test 1: Chapter 1",
+        "Date": "2026.09.06",
+        "Result": "*",
+        "Variant": "Racing Kings",
+        "ECO": "?",
+        "Opening": "?",
+        "StudyName": "Test 1",
+        "ChapterName": "Chapter 1",
+        "ChapterURL": "https://lichess.org/study/CHXlVPjR/Yewdtiij",
+        "Annotator": "https://lichess.org/@/Mysterious_Past",
+        "FEN": "8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1",
+        "SetUp": "1",
+        "UTCDate": "2026.09.06",
+        "UTCTime": "06:20:25"
+      },
+      "startingFen": "8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1",
+      "orientation": null,
+      "moves": [
+        {
+          "san": "Kg3",
+          "comments": [],
+          "nags": [],
+          "glyphs": [],
+          "children": [
+            {
+              "san": "Kb3",
+              "comments": [],
+              "nags": [],
+              "glyphs": [],
+              "children": [
+                {
+                  "san": "Kf4",
+                  "comments": [],
+                  "nags": [],
+                  "glyphs": [],
+                  "children": [
+                    {
+                      "san": "Kc4",
+                      "comments": [],
+                      "nags": [],
+                      "glyphs": [],
+                      "children": [
+                        {
+                          "san": "Ke5",
+                          "comments": [],
+                          "nags": [],
+                          "glyphs": [],
+                          "children": [
+                            {
+                              "san": "Qa6",
+                              "comments": [],
+                              "nags": [],
+                              "glyphs": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
