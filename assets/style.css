@@ -118,6 +118,12 @@ input:focus, textarea:focus, select:focus { border-color: rgba(231,187,99,.55); 
 #board.board.cg-wrap .cg-board { position:absolute; inset:0; width:100%; height:100%; }
 #board.board.cg-wrap .cg-wrap { width:100%; height:100%; }
 
+/* The trainer imports Chessground's brown theme for piece styling, but the
+   application board should match the site's cooler blue/navy visual system. */
+#board.board.cg-wrap cg-board square.white { background-color:#d7e2eb !important; }
+#board.board.cg-wrap cg-board square.black { background-color:#5f7890 !important; }
+#board.board.cg-wrap cg-board { background:#5f7890 !important; }
+
 @media (max-width: 860px) {
   .site-header { align-items:flex-start; flex-direction:column; }
   .hero { grid-template-columns:1fr; }
