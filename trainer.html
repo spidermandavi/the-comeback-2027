@@ -118,7 +118,7 @@
     const $ = id => document.getElementById(id);
     const PIECES = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟', K:'♔', Q:'♕', R:'♖', B:'♗', N:'♘', P:'♙' };
     const PROMOTION_PIECES = { q:'Queen', r:'Rook', b:'Bishop', n:'Knight' };
-    const STATS_KEY = 'comeback2027-training-stats-v3';
+    const STATS_KEY = 'comeback2027-training-stats-v2';
 
     let library = [];
     let selectedOpening = null;
@@ -304,9 +304,8 @@
         if (!nodes?.length) return;
         nodes.forEach(node => {
           const path = [...prefix, node];
-          if (!node.children?.length) {
-            result.push({ id: `line-${result.length + 1}`, nodes: path, san: path.map(n => n.san), label: formatLineLabel(path, result.length + 1) });
-          } else walk(node.children, path);
+          if (!node.children?.length) result.push({ id: `line-${result.length + 1}`, nodes: path, san: path.map(n => n.san), label: formatLineLabel(path, result.length + 1) });
+          else walk(node.children, path);
         });
       };
       walk(chapter?.moves || [], []);
@@ -371,7 +370,6 @@
     }
 
     function clearOpponentTimer() { if (opponentTimer) { clearTimeout(opponentTimer); opponentTimer = null; } }
-
     function expectedNode() { return selectedLine?.nodes?.[lineHistory.length] || null; }
 
     function autoOpponent() {
@@ -505,16 +503,6 @@
       autoOpponent();
     }
 
-    function chooseNextLine() {
-      if (!lineIndex.length) return;
-      const current = Number($('line-select').value || 0);
-      const next = (current + 1) % lineIndex.length;
-      $('line-select').value = String(next);
-      selectedLine = lineIndex[next];
-      updateLineInfo();
-      startLine();
-    }
-
     function linesForOpening(item) {
       return (item?.data?.chapters || []).flatMap(chapter => flattenLines(chapter).map(line => ({ line, chapter })));
     }
@@ -634,6 +622,16 @@
     $('side-select').addEventListener('change', () => { if (training) startLine(); });
     $('promotion-cancel').addEventListener('click', hidePromotionDialog);
     $('promotion-modal').addEventListener('click', event => { if (event.target.id === 'promotion-modal') hidePromotionDialog(); });
+
+    function chooseNextLine() {
+      if (!lineIndex.length) return;
+      const current = Number($('line-select').value || 0);
+      const next = (current + 1) % lineIndex.length;
+      $('line-select').value = String(next);
+      selectedLine = lineIndex[next];
+      updateLineInfo();
+      startLine();
+    }
 
     updateStats();
     renderOpeningRoadmap();
