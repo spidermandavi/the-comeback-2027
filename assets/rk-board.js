@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'https://esm.sh/react@18.3.1';
 import { Chessboard } from 'https://esm.sh/react-chessboard@4.7.3?deps=react@18.3.1,react-dom@18.3.1';
-import { getLegalMoves, legalDestinationMap, tryMove, isRacingKingsWin } from './racingKings.js';
+import { getLegalMoves } from './racingKings.js';
 
 const h = React.createElement;
 const DOT = 'radial-gradient(circle, rgba(231,187,99,.96) 0 21%, transparent 22%)';
@@ -26,11 +26,12 @@ function BoardInner({ fen, game, interactive, orientation, highlightSquares = {}
     };
   }, []);
 
-  useEffect(() => {
-    setSelected(null);
-  }, [fen, interactive]);
+  useEffect(() => setSelected(null), [fen, interactive]);
 
-  const legalMoves = useMemo(() => interactive ? getLegalMoves(game) : [], [game, fen, interactive]);
+  const legalMoves = useMemo(
+    () => (interactive ? getLegalMoves(game) : []),
+    [game, fen, interactive],
+  );
   const byFrom = useMemo(() => {
     const map = new Map();
     for (const move of legalMoves) {
@@ -42,14 +43,13 @@ function BoardInner({ fen, game, interactive, orientation, highlightSquares = {}
 
   const squareStyles = useMemo(() => {
     const styles = { ...highlightSquares };
-    if (selected) styles[selected] = { ...(styles[selected] || {}), backgroundColor: 'rgba(231,187,99,.30)' };
-    if (selected) {
-      for (const move of byFrom.get(selected) || []) {
-        styles[move.to] = {
-          ...(styles[move.to] || {}),
-          background: move.captured ? CAPTURE : DOT,
-        };
-      }
+    if (!selected) return styles;
+    styles[selected] = { ...(styles[selected] || {}), backgroundColor: 'rgba(231,187,99,.30)' };
+    for (const move of byFrom.get(selected) || []) {
+      styles[move.to] = {
+        ...(styles[move.to] || {}),
+        background: move.captured ? CAPTURE : DOT,
+      };
     }
     return styles;
   }, [selected, byFrom, highlightSquares]);
@@ -57,21 +57,18 @@ function BoardInner({ fen, game, interactive, orientation, highlightSquares = {}
   const chooseSquare = (square) => {
     if (!interactive) return;
     if (selected) {
-      const move = (byFrom.get(selected) || []).find((candidate) => candidate.to === square);
-      if (move) {
-        const accepted = onMove(selected, square);
-        if (accepted) {
+      const target = (byFrom.get(selected) || []).find((move) => move.to === square);
+      if (target) {
+        if (onMove(selected, square)) {
           setSelected(null);
           return;
         }
+        return;
       }
     }
     const piece = game.get(square);
-    if (piece && piece.color === game.turn() && byFrom.has(square)) {
-      setSelected(square);
-    } else {
-      setSelected(null);
-    }
+    if (piece && piece.color === game.turn() && byFrom.has(square)) setSelected(square);
+    else setSelected(null);
   };
 
   const drop = (sourceSquare, targetSquare) => {
@@ -104,17 +101,3 @@ function BoardInner({ fen, game, interactive, orientation, highlightSquares = {}
 }
 
 export const RKChessboard = React.memo(BoardInner);
-
-export function mountRKChessboard(element, props) {
-  const { createRoot } = window.__COMEBACK_REACT_DOM || {};
-  if (!createRoot) throw new Error('ReactDOM is not initialized.');
-  return createRoot(element).render(h(RKChessboard, props));
-}
-
-export function boardHelpers(game) {
-  return {
-    destinations: legalDestinationMap(game),
-    canMove: (from, to) => Boolean(tryMove({ ...game }, { from, to })),
-    isWin: () => isRacingKingsWin(game),
-  };
-}
