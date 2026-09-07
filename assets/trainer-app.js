@@ -12,7 +12,7 @@ function loadStats(){try{const r=JSON.parse(localStorage.getItem(STATS_KEY));if(
 function saveStats(stats,onError){try{localStorage.setItem(STATS_KEY,JSON.stringify(stats));}catch{onError?.();}}
 function localDateKey(date=new Date()){const d=new Date(date);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function addDays(iso,days){const d=new Date(iso||Date.now());d.setHours(12,0,0,0);d.setDate(d.getDate()+days);return d.toISOString();}
-const dueNow=r=>!r?.dueAt||new Date(r.dueAt).getTime()<=Date.now();const masteryLabel=l=>['New','Learning','Familiar','Strong','Very strong','Mastered'][Math.max(0,Math.min(5,l||0))];
+const dueNow=r=>Boolean(r?.dueAt)&&new Date(r.dueAt).getTime()<=Date.now();const masteryLabel=l=>['New','Learning','Familiar','Strong','Very strong','Mastered'][Math.max(0,Math.min(5,l||0))];
 function lineKey(line,opening,chapter){return line&&opening&&chapter?[opening.file,chapter.id||chapter.name||'chapter',line.nodes.map(n=>n.san).join(' ')].join('::'):null;}
 function flattenChapter(chapter){const out=[];const walk=(nodes,path)=>{(nodes||[]).forEach(n=>{const next=[...path,n];if(n.children?.length)walk(n.children,next);else out.push({id:`line-${out.length+1}`,nodes:next});});};walk(chapter?.moves,[]);return out;}
 function openingLines(library){const all=[];library.forEach(opening=>(opening.data.chapters||[]).forEach(chapter=>flattenChapter(chapter).forEach(line=>all.push({opening,chapter,line}))));return all;}
