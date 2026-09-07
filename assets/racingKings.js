@@ -29,7 +29,11 @@ export class RacingKingsGame {
 
   get(square) {
     const parsed = parseSquare(square);
-    return parsed === undefined ? undefined : this.position.board.get(parsed);
+    const piece = parsed === undefined ? undefined : this.position.board.get(parsed);
+    if (!piece) return undefined;
+    // The board adapter uses chess.js-style w/b colors, while chessops uses
+    // white/black internally.
+    return { ...piece, color: piece.color === 'white' ? 'w' : 'b' };
   }
 
   move(move) {
