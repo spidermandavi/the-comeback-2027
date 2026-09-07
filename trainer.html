@@ -6,19 +6,11 @@
 <meta name="description" content="Racing Kings opening trainer for The Comeback 2027.">
 <title>Opening Trainer — The Comeback 2027</title>
 <link rel="stylesheet" href="assets/style.css">
-<link rel="stylesheet" href="https://unpkg.com/@lichess-org/chessground@10.1.0/assets/chessground.base.css">
-<link rel="stylesheet" href="https://unpkg.com/@lichess-org/chessground@10.1.0/assets/chessground.brown.css">
-<link rel="stylesheet" href="https://unpkg.com/@lichess-org/chessground@10.1.0/assets/chessground.cburnett.css">
 <style>
-#board{width:min(100%,720px);aspect-ratio:1;touch-action:none}
-.board-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);gap:18px}
-.cg-wrap{position:relative}
-#board.cg-wrap .cg-board{width:100%;height:100%;position:absolute;inset:0}
-#board.cg-wrap .cg-shapes{pointer-events:none}
-#board.cg-wrap .move-dest{background:radial-gradient(circle,rgba(231,187,99,.95) 20%,transparent 22%)!important}
-#board.cg-wrap .premove-dest{background:rgba(231,187,99,.2)!important}
-#board.cg-wrap .last-move{background:rgba(231,187,99,.18)!important}
-@media(max-width:900px){.board-wrap{grid-template-columns:1fr}#board{max-width:680px;margin:auto}}
+#board{width:100%;min-width:0}
+.board-wrap{display:grid;grid-template-columns:minmax(0,620px) minmax(280px,1fr);gap:18px;align-items:start}
+.rk-board-react-shell{width:100%;max-width:620px;margin:auto;touch-action:none}
+@media(max-width:860px){.board-wrap{grid-template-columns:1fr}.rk-board-react-shell{max-width:680px}}
 </style>
 </head>
 <body>
@@ -27,21 +19,19 @@
 <section class="card panel roadmap-panel"><div class="roadmap-heading"><div><p class="eyebrow">OPENING JOURNEY</p><h3>Your repertoire</h3><p class="small">Each JSON opening is a lesson. Progress is based on complete lines you have finished.</p></div><div class="roadmap-total" id="roadmap-total">0%</div></div><div class="roadmap-track"><div id="roadmap-total-bar"></div></div><div id="opening-roadmap" class="opening-roadmap" aria-label="Opening progress"></div></section>
 <section class="card panel" style="margin-top:16px"><div class="training-header"><div><p class="eyebrow">REPERTOIRE</p><h3 style="margin-bottom:4px">Choose an opening</h3><span class="small">Opening files are read from <code>openings/index.json</code>.</span></div><div style="min-width:min(100%,360px)"><label for="opening-select" class="visually-hidden">Opening</label><select id="opening-select"><option>Loading openings…</option></select></div></div><div class="grid two"><div class="field" style="margin-bottom:0"><label for="chapter-select">Chapter</label><select id="chapter-select"><option>Loading…</option></select></div><div class="field" style="margin-bottom:0"><label for="line-select">Line</label><select id="line-select"><option>Loading…</option></select></div></div><div class="grid two" style="margin-top:16px"><div class="field" style="margin-bottom:0"><label for="side-select">Train as</label><select id="side-select"><option value="both">Both sides</option><option value="white">White</option><option value="black">Black</option></select></div><div class="notice compact" id="line-info">Select a line to see its repertoire details.</div></div><div class="button-row"><button class="button primary" id="start" type="button">Start training</button><button class="button secondary" id="next-line" type="button">Next line</button><button class="button secondary" id="reset-stats" type="button">Reset local stats</button></div></section>
 <section class="stats" aria-label="Training statistics"><div class="stat"><strong id="stat-correct">0</strong><span>Correct attempts</span></div><div class="stat"><strong id="stat-mistakes">0</strong><span>Mistakes</span></div><div class="stat"><strong id="stat-accuracy">—</strong><span>Accuracy</span></div><div class="stat"><strong id="stat-lifetime">0</strong><span>Lines tracked</span></div></section>
-<section class="board-wrap"><div><div id="board" class="board cg-wrap" aria-label="Racing Kings training board"></div><div style="margin-top:12px" class="progress" aria-label="Current line progress"><div id="progress-bar"></div></div></div><aside class="board-side"><div class="card panel"><p class="eyebrow">YOUR MOVE</p><h3 id="prompt">Select an opening and start.</h3><p id="feedback" class="notice" role="status">The board becomes interactive when training starts.</p><div class="button-row"><button class="button secondary" id="restart" type="button">Restart line</button></div></div><div class="card panel"><p class="eyebrow">LINE</p><div id="line" class="line"><span class="small">No line loaded.</span></div></div><div class="card panel"><p class="eyebrow">ANNOTATION</p><p id="comment" class="small">Move notes will appear here when you reach the annotated move.</p></div></aside></section>
+<section class="board-wrap"><div><div id="board" class="board" aria-label="Racing Kings training board"></div><div style="margin-top:12px" class="progress" aria-label="Current line progress"><div id="progress-bar"></div></div></div><aside class="board-side"><div class="card panel"><p class="eyebrow">YOUR MOVE</p><h3 id="prompt">Select an opening and start.</h3><p id="feedback" class="notice" role="status">The Racing Kings board is ready. Start a line to enable moves.</p><div class="button-row"><button class="button secondary" id="restart" type="button">Restart line</button></div></div><div class="card panel"><p class="eyebrow">LINE</p><div id="line" class="line"><span class="small">Racing Kings starting position</span></div></div><div class="card panel"><p class="eyebrow">ANNOTATION</p><p id="comment" class="small">Move notes will appear here when you reach the annotated move.</p></div></aside></section>
 </main><footer>Training statistics are stored in this browser and remain until you reset them.</footer>
 <script type="module">
-import { Chessground } from 'https://esm.sh/@lichess-org/chessground@10.1.0';
-import { parseFen, makeFen } from 'https://esm.sh/chessops@0.15.1/fen';
-import { parseSan } from 'https://esm.sh/chessops@0.15.1/san';
-import { parseUci } from 'https://esm.sh/chessops@0.15.1/util';
-import { chessgroundDests } from 'https://esm.sh/chessops@0.15.1/compat';
-import { RacingKings } from 'https://esm.sh/chessops@0.15.1/variant';
+import React from 'https://esm.sh/react@18.3.1';
+import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
+import { RKChessboard } from './assets/rk-board.js';
+import { cloneGame, createRacingKingsGame, getLegalMoves, RACING_KINGS_FEN, tryMove, tryMoveSAN, isRacingKingsWin } from './assets/racingKings.js';
 
+const h=React.createElement;
 const $=id=>document.getElementById(id);
 const STATS_KEY='comeback2027-training-stats-v3';
-const DEFAULT_RK_FEN='krbnNBRK/qrbnNBRQ/8/8/8/8/8/8 w - - 0 1';
 let library=[],selectedOpening=null,selectedChapter=null,selectedLine=null,lineIndex=[];
-let position=null,training=false,lineHistory=[],orientation='white',ground=null;
+let game=createRacingKingsGame(RACING_KINGS_FEN),training=false,lineHistory=[],orientation='white',boardRoot=null;
 let stats=loadStats();
 
 function emptyStats(){return{version:3,global:{correct:0,mistakes:0},byLine:{}}}
@@ -52,88 +42,48 @@ function lineKey(line=selectedLine,opening=selectedOpening,chapter=selectedChapt
 function lineStats(line=selectedLine,opening=selectedOpening,chapter=selectedChapter){const k=lineKey(line,opening,chapter);return k?(stats.byLine[k]||{correct:0,mistakes:0,attempts:0}):{correct:0,mistakes:0,attempts:0}}
 function recordAttempt(ok){stats.global[ok?'correct':'mistakes']++;const k=lineKey();if(k){const e=stats.byLine[k]||{correct:0,mistakes:0,attempts:0};e[ok?'correct':'mistakes']=(e[ok?'correct':'mistakes']||0)+1;e.attempts=(e.attempts||0)+1;e.lastAttempt=new Date().toISOString();stats.byLine[k]=e}saveStats()}
 function completeLine(){const k=lineKey();if(!k)return;const e=stats.byLine[k]||{correct:0,mistakes:0,attempts:0};e.completedAt=e.completedAt||new Date().toISOString();e.completions=(e.completions||0)+1;stats.byLine[k]=e;saveStats()}
-
-function colorName(color){return color?'white':'black'}
-function currentColor(){return position?colorName(position.turn):'white'}
-function createPosition(startingFen){
-  try{
-    const setup=parseFen(startingFen||DEFAULT_RK_FEN).unwrap();
-    return RacingKings.fromSetup(setup).unwrap();
-  }catch(e){throw new Error(`Could not create Racing Kings position: ${e.message||e}`)}
-}
-function currentFen(){return makeFen(position.toSetup())}
-
-// chessops/compat converts the variant's native legal move map into exactly
-// the square-name Map format Chessground expects. This keeps all Racing Kings
-// legality (including the variant's special check rules) in chessops.
-function legalDestinationMap(){return position&&training?chessgroundDests(position):new Map()}
-function allowedColor(){
-  if(!training)return undefined;
-  const side=$('side-select').value;
-  if(side==='both')return 'both';
-  return side===currentColor()?side:'none';
-}
-function refreshBoard(animate=false){
-  if(!ground||!position)return;
-  ground.set({
-    fen:currentFen(),
-    orientation,
-    turnColor:currentColor(),
-    movable:{color:allowedColor()||'none',free:false,dests:legalDestinationMap(),showDests:true,events:{after:handleBoardMove}},
-    selectable:{enabled:true},
-    animation:{enabled:animate,duration:180}
-  });
-}
+function currentColor(){return game.turn()==='w'?'white':'black'}
 function expectedNode(){return selectedLine?.nodes?.[lineHistory.length]||null}
-function expectedMove(node){try{return node?parseSan(position,node.san):null}catch{return null}}
-function sameMove(a,b){return!!(a&&b&&a.from===b.from&&a.to===b.to&&(a.promotion||null)===(b.promotion||null))}
-function playMove(move,node){position.play(move);lineHistory.push(node.san);refreshBoard(true);renderLine();renderAnnotation(node);$('progress-bar').style.width=`${Math.round(lineHistory.length/(selectedLine.nodes.length||1)*100)}%`}
-function handleBoardMove(orig,dest){
-  if(!training||!position){refreshBoard();return}
-  const legal=legalDestinationMap().get(orig)||[];
-  if(!legal.includes(dest)){refreshBoard();return}
-  const move=parseUci(`${orig}${dest}`);
-  if(!move||!position.isLegal(move)){refreshBoard();return}
-  const node=expectedNode(),expected=expectedMove(node);
-  if(!node||!expected){finish();return}
-  if(!sameMove(expected,move)){
-    recordAttempt(false);$('feedback').className='notice bad';$('feedback').textContent='That move is legal, but it is not the move in this repertoire line. Try again.';refreshBoard();return;
+function renderBoard(){if(!boardRoot) return;boardRoot.render(h(RKChessboard,{fen:game.fen(),game,interactive:training,orientation,highlightSquares:{},onMove:handleBoardMove,key:game.fen()+String(training)}))}
+function handleBoardMove(from,to){
+  if(!training)return false;
+  const test=cloneGame(game);
+  const move=tryMove(test,{from,to});
+  if(!move)return false;
+  const node=expectedNode();
+  if(!node)return false;
+  const expectedTest=cloneGame(game);
+  const expected=tryMoveSAN(expectedTest,node.san);
+  if(!expected || move.san!==expected.san){
+    recordAttempt(false);$('feedback').className='notice bad';$('feedback').textContent='That move is legal, but it is not the move in this repertoire line.';return false;
   }
-  recordAttempt(true);$('feedback').className='notice good';$('feedback').textContent=`Correct: ${node.san}`;playMove(move,node);
+  const applied=tryMove(game,{from,to});
+  if(!applied)return false;
+  recordAttempt(true);lineHistory.push(node.san);renderLine();renderAnnotation(node);updateProgress();
+  $('feedback').className='notice good';$('feedback').textContent=`Correct: ${node.san}`;
+  if(isRacingKingsWin(game)){finish('Racing Kings win reached.');return true}
   if(!expectedNode())finish();else $('prompt').textContent=`Find ${currentColor()==='white'?'White':'Black'}'s move.`;
+  renderBoard();
+  return true;
 }
-function finish(){training=false;completeLine();$('progress-bar').style.width='100%';$('prompt').textContent='Line complete.';$('feedback').className='notice good';$('feedback').textContent='Excellent. This line is complete.';refreshBoard()}
-function renderLine(){const h=$('line');h.innerHTML='';lineHistory.forEach((san,i)=>{const r=document.createElement('div');r.className=`move-row ${i===lineHistory.length-1?'current':''}`;r.textContent=`${Math.floor(i/2)+1}${i%2?'… ':'. '}${san}`;h.appendChild(r)});if(!lineHistory.length)h.innerHTML='<span class="small">Racing Kings starting position</span>'}
+function finish(message='Excellent. This line is complete.'){$('progress-bar').style.width='100%';training=false;completeLine();$('prompt').textContent='Line complete.';$('feedback').className='notice good';$('feedback').textContent=message;renderBoard()}
+function renderLine(){const out=$('line');out.innerHTML='';lineHistory.forEach((san,i)=>{const row=document.createElement('div');row.className=`move-row ${i===lineHistory.length-1?'current':''}`;row.textContent=`${Math.floor(i/2)+1}${i%2?'… ':'. '}${san}`;out.appendChild(row)});if(!lineHistory.length)out.innerHTML='<span class="small">Racing Kings starting position</span>'}
 function renderAnnotation(n){const parts=[];if(n?.comments?.length)parts.push(...n.comments.filter(Boolean));if(n?.glyphs?.length)parts.push(`Evaluation: ${n.glyphs.join(' ')}`);if(n?.nags?.length)parts.push(`NAG ${n.nags.join(', ')}`);$('comment').textContent=parts.length?parts.join(' · '):'No annotation on this move.'}
+function updateProgress(){const total=selectedLine?.nodes?.length||0;$('progress-bar').style.width=`${total?Math.round(lineHistory.length/total*100):0}%`}
 function updateLineInfo(){const i=$('line-info');if(!selectedLine){i.textContent='Select a line to see its repertoire details.';return}const s=lineStats(),t=(s.correct||0)+(s.mistakes||0);i.innerHTML=`<strong>${selectedLine.nodes.length} plies</strong> · ${s.attempts||0} attempts · ${t?Math.round((s.correct||0)/t*100)+'%':'not trained'}${s.completedAt?' · completed':''}`}
-function flatten(ch){const out=[];const walk=(nodes,path)=>(nodes||[]).forEach(n=>{const next=[...path,n];n.children?.length?walk(n.children,next):out.push({id:`line-${out.length+1}`,nodes:next,label:formatLineLabel(next,out.length+1)})});walk(ch?.moves,[]);return out}
+function flatten(ch){const out=[];function walk(nodes,path){(nodes||[]).forEach(n=>{const next=[...path,n];if(n.children?.length)walk(n.children,next);else out.push({id:`line-${out.length+1}`,nodes:next,label:formatLineLabel(next,out.length+1)})})}walk(ch?.moves,[]);return out}
 function formatLineLabel(nodes,n){const preview=nodes.slice(0,6).map((x,i)=>`${Math.floor(i/2)+1}${i%2?'…':'.'} ${x.san}`).join(' ');return`Line ${n} — ${preview}${nodes.length>6?' …':''}`}
 function updateLineList(){lineIndex=flatten(selectedChapter);const s=$('line-select');s.innerHTML='';lineIndex.forEach((line,i)=>{const o=document.createElement('option');o.value=i;o.textContent=line.label;s.appendChild(o)});selectedLine=lineIndex[0]||null;if(selectedLine)s.value='0';updateLineInfo()}
-function updateChapters(){training=false;selectedOpening=library[Number($('opening-select').value)];const chapters=selectedOpening?.data?.chapters||[],s=$('chapter-select');s.innerHTML='';chapters.forEach((ch,i)=>{const o=document.createElement('option');o.value=i;o.textContent=ch.name||`Chapter ${i+1}`;s.appendChild(o)});selectedChapter=chapters[0]||null;updateLineList();position=null;lineHistory=[];renderLine();if(ground)ground.set({viewOnly:true});renderRoadmap()}
-function updateSelectedChapter(){training=false;selectedChapter=selectedOpening?.data?.chapters?.[Number($('chapter-select').value)]||null;updateLineList();position=null;lineHistory=[];renderLine();if(ground)ground.set({viewOnly:true})}
-function startLine(){
-  if(!selectedChapter||!selectedLine)return;
-  try{position=createPosition(selectedChapter.startingFen||selectedChapter.tags?.FEN||null)}catch(e){$('prompt').textContent='Invalid Racing Kings position.';$('feedback').className='notice bad';$('feedback').textContent=e.message;return}
-  training=true;lineHistory=[];orientation=selectedChapter.orientation==='black'?'black':'white';
-  $('feedback').className='notice';$('feedback').textContent='Click a piece to see its legal moves, then click a highlighted square.';
-  $('prompt').textContent=`Find ${currentColor()==='white'?'White':'Black'}'s move.`;$('progress-bar').style.width='0%';renderLine();renderAnnotation(null);updateLineInfo();refreshBoard();
-}
+function updateChapters(){training=false;selectedOpening=library[Number($('opening-select').value)];const chapters=selectedOpening?.data?.chapters||[],s=$('chapter-select');s.innerHTML='';chapters.forEach((ch,i)=>{const o=document.createElement('option');o.value=i;o.textContent=ch.name||`Chapter ${i+1}`;s.appendChild(o)});selectedChapter=chapters[0]||null;updateLineList();resetBoardView();renderRoadmap()}
+function updateSelectedChapter(){training=false;selectedChapter=selectedOpening?.data?.chapters?.[Number($('chapter-select').value)]||null;updateLineList();resetBoardView()}
+function resetBoardView(){game=createRacingKingsGame(selectedChapter?.startingFen||selectedChapter?.tags?.FEN||RACING_KINGS_FEN);lineHistory=[];orientation=selectedChapter?.orientation==='black'?'black':'white';renderLine();renderAnnotation(null);updateProgress();$('prompt').textContent='Select an opening and start.';$('feedback').className='notice';$('feedback').textContent='Start a line to enable the Racing Kings board.';renderBoard()}
+function startLine(){if(!selectedChapter||!selectedLine)return;game=createRacingKingsGame(selectedChapter.startingFen||selectedChapter.tags?.FEN||RACING_KINGS_FEN);training=true;lineHistory=[];orientation=selectedChapter.orientation==='black'?'black':'white';$('feedback').className='notice';$('feedback').textContent='Click a piece to see its legal moves, then click a highlighted square, or drag the piece to a legal square.';$('prompt').textContent=`Find ${currentColor()==='white'?'White':'Black'}'s move.`;updateProgress();renderLine();renderAnnotation(null);renderBoard()}
 function openingProgress(item){const all=(item?.data?.chapters||[]).flatMap(ch=>flatten(ch).map(line=>({line,chapter:ch})));const completed=all.filter(x=>lineStats(x.line,item,x.chapter).completedAt).length;return{total:all.length,completed,percent:all.length?Math.round(completed/all.length*100):0}}
 function renderRoadmap(){const h=$('opening-roadmap');h.innerHTML='';if(!library.length)return;let total=0,done=0;library.forEach((item,index)=>{const p=openingProgress(item);total+=p.total;done+=p.completed;const b=document.createElement('button');b.type='button';b.className=`opening-lesson ${item===selectedOpening?'selected':''}${p.percent===100?' complete':''}`;b.innerHTML=`<span class="lesson-number">${index+1}</span><span class="lesson-name">${escapeHtml(item.name||item.file)}</span><span class="lesson-count">${p.completed}/${p.total} lines</span><span class="lesson-progress"><span style="width:${p.percent}%"></span></span><span class="lesson-percent">${p.percent}%</span>`;b.onclick=()=>{$('opening-select').value=String(index);updateChapters()};h.appendChild(b)});const pct=total?Math.round(done/total*100):0;$('roadmap-total').textContent=`${pct}%`;$('roadmap-total-bar').style.width=`${pct}%`}
-function escapeHtml(v){return String(v).replace(/[&<>\'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
+function escapeHtml(v){return String(v).replace(/[&<>\'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]))}
 async function loadLibrary(){try{const response=await fetch('openings/index.json',{cache:'no-store'});if(!response.ok)throw new Error(`Could not load openings/index.json (HTTP ${response.status}).`);const index=await response.json();if(index.schemaVersion!==1||!Array.isArray(index.openings))throw new Error('Invalid opening index.');library=await Promise.all(index.openings.map(async entry=>{const r=await fetch(`openings/${entry.file.split('/').map(encodeURIComponent).join('/')}`,{cache:'no-store'});if(!r.ok)throw new Error(`Could not load ${entry.file} (HTTP ${r.status}).`);const data=await r.json();if(data.variant!=='racingKings'||!Array.isArray(data.chapters))throw new Error(`${entry.file} is not a Racing Kings opening file.`);return{...entry,data}}));if(!library.length)throw new Error('No opening files are registered.');const s=$('opening-select');s.innerHTML='';library.forEach((item,i)=>{const o=document.createElement('option');o.value=i;o.textContent=item.name||item.file;s.appendChild(o)});updateChapters();renderRoadmap()}catch(e){$('opening-select').innerHTML='<option>Could not load openings</option>';$('prompt').textContent='Opening library unavailable.';$('feedback').className='notice bad';$('feedback').textContent=e.message||String(e)}}
-
-$('opening-select').addEventListener('change',updateChapters);
-$('chapter-select').addEventListener('change',updateSelectedChapter);
-$('line-select').addEventListener('change',()=>{selectedLine=lineIndex[Number($('line-select').value)]||null;updateLineInfo()});
-$('start').addEventListener('click',startLine);
-$('restart').addEventListener('click',startLine);
-$('next-line').addEventListener('click',()=>{if(!lineIndex.length)return;const n=(Number($('line-select').value||0)+1)%lineIndex.length;$('line-select').value=String(n);selectedLine=lineIndex[n];startLine()});
-$('side-select').addEventListener('change',()=>{if(training)startLine()});
-$('reset-stats').addEventListener('click',()=>{if(!confirm('Reset all local training statistics and opening progress?'))return;stats=emptyStats();saveStats();$('feedback').className='notice';$('feedback').textContent='Local training statistics reset.'});
-
-ground=Chessground($('board'),{coordinates:true,viewOnly:true,selectable:{enabled:true},movable:{free:false,showDests:true},animation:{enabled:false}});
-updateStats();renderRoadmap();loadLibrary();
+$('opening-select').addEventListener('change',updateChapters);$('chapter-select').addEventListener('change',updateSelectedChapter);$('line-select').addEventListener('change',()=>{selectedLine=lineIndex[Number($('line-select').value)]||null;updateLineInfo()});$('start').addEventListener('click',startLine);$('restart').addEventListener('click',startLine);$('next-line').addEventListener('click',()=>{if(!lineIndex.length)return;const n=(Number($('line-select').value||0)+1)%lineIndex.length;$('line-select').value=String(n);selectedLine=lineIndex[n];startLine()});$('side-select').addEventListener('change',()=>{if(training)startLine()});$('reset-stats').addEventListener('click',()=>{if(!confirm('Reset all local training statistics and opening progress?'))return;stats=emptyStats();saveStats();$('feedback').className='notice';$('feedback').textContent='Local training statistics reset.'});
+boardRoot=createRoot($('board'));renderBoard();updateStats();renderRoadmap();loadLibrary();
 </script>
 </body>
 </html>
