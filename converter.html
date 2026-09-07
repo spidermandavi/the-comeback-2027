@@ -1,315 +1,315 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Convert Racing Kings Lichess studies and PGN into trainer-ready JSON.">
-  <title>Study Converter — The Comeback 2027</title>
-  <link rel="stylesheet" href="assets/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Convert Racing Kings Lichess studies and PGN into trainer-ready JSON.">
+<title>Study Converter — The Comeback 2027</title>
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div><p class="eyebrow">THE COMEBACK 2027</p><h1>Study Converter</h1><p class="tagline">Turn Lichess Racing Kings studies into trainer-ready JSON.</p></div>
-    <nav aria-label="Primary navigation"><a class="nav-link" href="index.html">Home</a><a class="nav-link" href="trainer.html">Trainer</a><a class="nav-link active" href="converter.html" aria-current="page">Converter</a></nav>
-  </header>
+<header class="site-header">
+  <div><p class="eyebrow">THE COMEBACK 2027</p><h1>Study Converter</h1><p class="tagline">Turn Lichess Racing Kings studies into trainer-ready JSON.</p></div>
+  <nav aria-label="Primary navigation"><a class="nav-link" href="index.html">Home</a><a class="nav-link" href="trainer.html">Trainer</a><a class="nav-link active" href="converter.html" aria-current="page">Converter</a></nav>
+</header>
 
-  <main class="container">
-    <section class="tool-layout">
-      <div class="card panel">
-        <div class="field">
-          <label for="study-url">Public Lichess study or chapter URL</label>
-          <input id="study-url" inputmode="url" placeholder="https://lichess.org/study/XXXXXXXX or /XXXXXXXX/YYYYYYYY" autocomplete="off">
-          <p class="small">Paste either a whole public study link or a link to one specific chapter. Private or restricted studies can be exported from Lichess and pasted below.</p>
-        </div>
-        <div class="button-row">
-          <button class="button primary" id="fetch-study" type="button">Fetch study PGN</button>
-          <button class="button secondary" id="clear-all" type="button">Clear</button>
-        </div>
-        <div class="field" style="margin-top:22px">
-          <label for="pgn-input">Or paste PGN</label>
-          <textarea id="pgn-input" spellcheck="false" placeholder="Paste one or more Lichess study chapters here..."></textarea>
-        </div>
-        <div class="button-row">
-          <button class="button primary" id="convert" type="button">Convert to JSON</button>
-        </div>
-        <div id="status" class="notice" style="margin-top:18px" role="status">Ready.</div>
+<main class="container">
+  <section class="tool-layout">
+    <div class="card panel">
+      <div class="field">
+        <label for="study-url">Public Lichess study or chapter URL</label>
+        <input id="study-url" inputmode="url" placeholder="https://lichess.org/study/XXXXXXXX or /XXXXXXXX/YYYYYYYY" autocomplete="off">
+        <p class="small">Paste either a whole public study link or a link to one specific chapter. Private or restricted studies can be exported from Lichess and pasted below.</p>
       </div>
+      <div class="button-row">
+        <button class="button primary" id="fetch-study" type="button">Fetch study PGN</button>
+        <button class="button secondary" id="clear-all" type="button">Clear</button>
+      </div>
+      <div class="field" style="margin-top:22px">
+        <label for="pgn-input">Or paste PGN</label>
+        <textarea id="pgn-input" spellcheck="false" placeholder="Paste one or more Lichess study chapters here..."></textarea>
+      </div>
+      <div class="button-row">
+        <button class="button primary" id="convert" type="button">Validate &amp; convert to JSON</button>
+      </div>
+      <div id="status" class="notice" style="margin-top:18px" role="status">Ready.</div>
+    </div>
 
-      <aside class="card panel">
-        <p class="eyebrow">OUTPUT FORMAT</p>
-        <h3>Trainer JSON</h3>
-        <p>Every move keeps its text comments, numeric NAGs, symbolic glyphs and child variations. The full branching tree is retained in the exported JSON.</p>
-        <div class="notice"><strong>Typical flow</strong><br><span class="small">Lichess study/chapter → PGN → JSON → <code>openings/</code> → Trainer</span></div>
-        <a class="button secondary download" id="download" style="display:none">Download JSON</a>
-      </aside>
-    </section>
+    <aside class="card panel">
+      <p class="eyebrow">OUTPUT FORMAT</p>
+      <h3>Trainer JSON</h3>
+      <p>Every move keeps its text comments, numeric NAGs, symbolic glyphs and child variations. Before export, every chapter and every branch is checked against the pinned Racing Kings rules.</p>
+      <div class="notice"><strong>Typical flow</strong><br><span class="small">Lichess study/chapter → PGN → validate → JSON → <code>openings/</code> → Trainer</span></div>
+      <a class="button secondary download" id="download" style="display:none">Download JSON</a>
+    </aside>
+  </section>
 
-    <section class="card panel" style="margin-top:18px">
-      <p class="eyebrow">PREVIEW</p>
-      <pre id="preview" style="margin:0;white-space:pre-wrap;overflow:auto;color:#cbd7e6">No conversion yet.</pre>
-    </section>
-  </main>
-  <footer>Study export is parsed locally in your browser.</footer>
+  <section class="card panel" style="margin-top:18px">
+    <p class="eyebrow">PREVIEW</p>
+    <pre id="preview" style="margin:0;white-space:pre-wrap;overflow:auto;color:#cbd7e6">No conversion yet.</pre>
+  </section>
+</main>
+<footer>PGN parsing and Racing Kings validation run locally in your browser.</footer>
 
-  <script>
-    const $ = id => document.getElementById(id);
-    const status = $('status');
-    let currentBlobUrl = null;
+<script type="module">
+import { validateRacingKingsOpening } from './assets/racingKings.js';
 
-    function setStatus(message, kind = '') {
-      status.className = `notice ${kind}`;
-      status.textContent = message;
+const $ = id => document.getElementById(id);
+const status = $('status');
+let currentBlobUrl = null;
+
+function setStatus(message, kind = '') {
+  status.className = `notice ${kind}`;
+  status.textContent = message;
+}
+
+function unescapeTagValue(value) {
+  return value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+}
+
+function parseTags(text) {
+  const tags = {};
+  for (const match of text.matchAll(/^\s*\[([^\s]+)\s+"((?:\\.|[^"\\])*)"\]\s*$/gm)) {
+    tags[match[1]] = unescapeTagValue(match[2]);
+  }
+  return tags;
+}
+
+function splitGames(pgn) {
+  const text = pgn.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
+  if (!text) return [];
+  const lines = text.split('\n');
+  const boundaries = [0];
+  let offset = 0;
+  let sawMovetext = false;
+  for (const line of lines) {
+    if (/^\s*\[[^\s\]]+\s+"/.test(line)) {
+      if (sawMovetext) boundaries.push(offset);
+    } else if (line.trim() && !/^\s*[%#]/.test(line) && !/^\s*\[/.test(line)) {
+      sawMovetext = true;
     }
+    offset += line.length + 1;
+  }
+  return boundaries.map((start, i) => text.slice(start, boundaries[i + 1] ?? text.length).trim()).filter(Boolean);
+}
 
-    function unescapeTagValue(value) {
-      return value.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+function stripHeaderLines(text) {
+  return text.replace(/^\s*\[[^\n]*\]\s*$/gm, '').replace(/^\s*%.*$/gm, '').trim();
+}
+
+function classifyWord(word) {
+  if (/^(?:1-0|0-1|1\/2-1\/2|\*)$/.test(word)) return { type: 'result', value: word };
+  return { type: 'move', value: word };
+}
+
+function tokenizeMovetext(text) {
+  const tokens = [];
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (ch === '{') {
+      const end = text.indexOf('}', i + 1);
+      if (end === -1) throw new Error('Unclosed PGN comment.');
+      tokens.push({ type: 'comment', value: text.slice(i + 1, end).trim() });
+      i = end + 1;
+      continue;
     }
-
-    function parseTags(text) {
-      const tags = {};
-      for (const match of text.matchAll(/^\s*\[([^\s]+)\s+"((?:\\.|[^"\\])*)"\]\s*$/gm)) {
-        tags[match[1]] = unescapeTagValue(match[2]);
+    if (ch === ';') {
+      const end = text.indexOf('\n', i + 1);
+      const e = end === -1 ? text.length : end;
+      tokens.push({ type: 'comment', value: text.slice(i + 1, e).trim() });
+      i = e;
+      continue;
+    }
+    if (ch === '(' || ch === ')') { tokens.push({ type: ch }); i++; continue; }
+    if (ch === '$') {
+      const m = text.slice(i).match(/^\$\d+/);
+      if (m) {
+        tokens.push({ type: 'nag', value: Number(m[0].slice(1)) });
+        i += m[0].length;
+        continue;
       }
-      return tags;
     }
+    let j = i;
+    while (j < text.length && !/[\s(){};$]/.test(text[j])) j++;
+    const word = text.slice(i, j);
+    if (/^\d+\.(?:\.\.)?$/.test(word) || /^\.\.\.$/.test(word)) { i = j; continue; }
+    const attachedMoveNumber = word.match(/^\d+\.(?:\.\.)?(.*)$/);
+    if (attachedMoveNumber && attachedMoveNumber[1]) tokens.push(classifyWord(attachedMoveNumber[1]));
+    else tokens.push(classifyWord(word));
+    i = j;
+  }
+  return tokens;
+}
 
-    function splitGames(pgn) {
-      const text = pgn.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
-      if (!text) return [];
-      const lines = text.split('\n');
-      const boundaries = [0];
-      let offset = 0;
-      let sawMovetext = false;
-      for (const line of lines) {
-        if (/^\s*\[[^\s\]]+\s+"/.test(line)) {
-          if (sawMovetext) boundaries.push(offset);
-        } else if (line.trim() && !/^\s*[%#]/.test(line) && !/^\s*\[/.test(line)) {
-          sawMovetext = true;
-        }
-        offset += line.length + 1;
-      }
-      return boundaries.map((start, i) => text.slice(start, boundaries[i + 1] ?? text.length).trim()).filter(Boolean);
+function normalizeSan(raw) {
+  let san = String(raw).trim();
+  const glyphs = [];
+  san = san.replace(/(!!|\?\?|!\?|\?!|!|\?)+$/g, match => {
+    glyphs.push(...(match.match(/!!|\?\?|!\?|\?!|!|\?/g) || []));
+    return '';
+  });
+  return { san, glyphs };
+}
+
+function parseTree(movetext) {
+  const root = { children: [] };
+  let current = root;
+  const stack = [];
+  let pendingNags = [];
+
+  for (const token of tokenizeMovetext(movetext)) {
+    if (token.type === '(') {
+      const branchPoint = current === root ? root : (current.parent || root);
+      stack.push({ returnTo: current });
+      current = branchPoint;
+      continue;
     }
-
-    function stripHeaderLines(text) {
-      return text
-        .replace(/^\s*\[[^\n]*\]\s*$/gm, '')
-        .replace(/^\s*%.*$/gm, '')
-        .trim();
+    if (token.type === ')') {
+      current = stack.pop()?.returnTo || root;
+      continue;
     }
-
-    function classifyWord(word) {
-      if (/^(?:1-0|0-1|1\/2-1\/2|\*)$/.test(word)) return { type: 'result', value: word };
-      return { type: 'move', value: word };
+    if (token.type === 'comment') {
+      current.comments ||= [];
+      if (token.value) current.comments.push(token.value);
+      continue;
     }
-
-    function tokenizeMovetext(text) {
-      const tokens = [];
-      let i = 0;
-      while (i < text.length) {
-        const ch = text[i];
-        if (/\s/.test(ch)) { i++; continue; }
-        if (ch === '{') {
-          const end = text.indexOf('}', i + 1);
-          if (end === -1) throw new Error('Unclosed PGN comment.');
-          tokens.push({ type: 'comment', value: text.slice(i + 1, end).trim() });
-          i = end + 1;
-          continue;
-        }
-        if (ch === ';') {
-          const end = text.indexOf('\n', i + 1);
-          const e = end === -1 ? text.length : end;
-          tokens.push({ type: 'comment', value: text.slice(i + 1, e).trim() });
-          i = e;
-          continue;
-        }
-        if (ch === '(' || ch === ')') { tokens.push({ type: ch }); i++; continue; }
-        if (ch === '$') {
-          const m = text.slice(i).match(/^\$\d+/);
-          if (m) {
-            tokens.push({ type: 'nag', value: Number(m[0].slice(1)) });
-            i += m[0].length;
-            continue;
-          }
-        }
-        let j = i;
-        while (j < text.length && !/[\s(){};$]/.test(text[j])) j++;
-        const word = text.slice(i, j);
-        if (/^\d+\.(?:\.\.)?$/.test(word) || /^\.\.\.$/.test(word)) {
-          i = j;
-          continue;
-        }
-        const attachedMoveNumber = word.match(/^\d+\.(?:\.\.)?(.*)$/);
-        if (attachedMoveNumber && attachedMoveNumber[1]) tokens.push(classifyWord(attachedMoveNumber[1]));
-        else tokens.push(classifyWord(word));
-        i = j;
-      }
-      return tokens;
+    if (token.type === 'nag') {
+      pendingNags.push(token.value);
+      continue;
     }
-
-    function normalizeSan(raw) {
-      let san = String(raw).trim();
-      const glyphs = [];
-      san = san.replace(/(!!|\?\?|!\?|\?!|!|\?)+$/g, match => {
-        glyphs.push(...(match.match(/!!|\?\?|!\?|\?!|!|\?/g) || []));
-        return '';
-      });
-      return { san, glyphs };
-    }
-
-    function parseTree(movetext) {
-      const root = { children: [], comments: [] };
-      let current = root;
-      const stack = [];
-      let pendingNags = [];
-
-      for (const token of tokenizeMovetext(movetext)) {
-        if (token.type === '(') {
-          const branchPoint = current === root ? root : (current.parent || root);
-          stack.push({ returnTo: current });
-          current = branchPoint;
-          continue;
-        }
-        if (token.type === ')') {
-          current = stack.pop()?.returnTo || root;
-          continue;
-        }
-        if (token.type === 'comment') {
-          current.comments ||= [];
-          if (token.value) current.comments.push(token.value);
-          continue;
-        }
-        if (token.type === 'nag') {
-          pendingNags.push(token.value);
-          continue;
-        }
-        if (token.type === 'result') continue;
-        if (token.type === 'move') {
-          const normalized = normalizeSan(token.value);
-          const node = {
-            san: normalized.san,
-            comments: [],
-            nags: [...pendingNags],
-            glyphs: normalized.glyphs,
-            children: [],
-            parent: current
-          };
-          pendingNags = [];
-          current.children.push(node);
-          current = node;
-        }
-      }
-
-      if (stack.length) throw new Error('Unclosed PGN variation.');
-
-      function clean(node) {
-        return {
-          san: node.san,
-          comments: Array.isArray(node.comments) ? [...node.comments] : [],
-          nags: Array.isArray(node.nags) ? [...node.nags] : [],
-          glyphs: Array.isArray(node.glyphs) ? [...node.glyphs] : [],
-          children: Array.isArray(node.children) ? node.children.map(clean) : []
-        };
-      }
-      return root.children.map(clean);
-    }
-
-    function convertPgn(pgn) {
-      const games = splitGames(pgn);
-      if (!games.length) throw new Error('No PGN was found.');
-
-      const chapters = games.map((gameText, index) => {
-        const tags = parseTags(gameText);
-        const variantValue = String(tags.Variant || tags.variant || '').trim();
-        if (variantValue && !/racing\s*kings/i.test(variantValue)) {
-          throw new Error(`Chapter ${index + 1} is not Racing Kings (Variant: ${variantValue}).`);
-        }
-        const moves = parseTree(stripHeaderLines(gameText));
-        if (!moves.length) throw new Error(`Chapter ${index + 1} contains no moves.`);
-        return {
-          id: tags.ChapterId || tags.ChapterID || `chapter-${index + 1}`,
-          name: tags.ChapterName || tags.Title || tags.Event || `Chapter ${index + 1}`,
-          tags,
-          startingFen: tags.FEN || null,
-          orientation: tags.Orientation || null,
-          moves
-        };
-      });
-
-      return {
-        schemaVersion: 1,
-        app: 'The Comeback 2027',
-        variant: 'racingKings',
-        convertedAt: new Date().toISOString(),
-        source: 'Lichess study PGN',
-        chapters
+    if (token.type === 'result') continue;
+    if (token.type === 'move') {
+      const normalized = normalizeSan(token.value);
+      const node = {
+        san: normalized.san,
+        comments: [],
+        nags: [...pendingNags],
+        glyphs: normalized.glyphs,
+        children: [],
+        parent: current
       };
+      pendingNags = [];
+      current.children.push(node);
+      current = node;
     }
+  }
 
-    $('fetch-study').addEventListener('click', async () => {
-      const url = $('study-url').value.trim();
-      const match = url.match(/(?:https?:\/\/)?(?:www\.)?lichess\.org\/study\/([A-Za-z0-9]{6,16})(?:\/([A-Za-z0-9]{6,16}))?(?:[/?#].*)?$/i);
-      if (!match) { setStatus('Enter a valid public Lichess study or chapter URL.', 'bad'); return; }
-      const studyId = match[1];
-      const chapterId = match[2] || null;
-      try {
-        setStatus(chapterId ? 'Fetching the selected study chapter PGN…' : 'Fetching the study PGN…');
-        const endpoint = chapterId
-          ? `https://lichess.org/api/study/${studyId}/${chapterId}.pgn?comments=true&variations=true&clocks=true`
-          : `https://lichess.org/study/${studyId}.pgn?comments=true&variations=true&clocks=true`;
-        const response = await fetch(endpoint, { headers: { Accept: 'application/x-chess-pgn' } });
-        if (!response.ok) throw new Error(`Lichess returned HTTP ${response.status}.`);
-        const pgn = await response.text();
-        if (!pgn.trim()) throw new Error('The study returned an empty PGN.');
-        $('pgn-input').value = pgn;
-        setStatus(chapterId ? 'Chapter PGN fetched. Review it, then convert to JSON.' : 'Study PGN fetched. Review it, then convert to JSON.', 'good');
-      } catch (error) {
-        setStatus(`Could not fetch the study${chapterId ? ' chapter' : ''}: ${error.message} You can paste the exported PGN manually instead.`, 'bad');
-      }
-    });
+  if (stack.length) throw new Error('Unclosed PGN variation.');
 
-    $('convert').addEventListener('click', () => {
-      try {
-        const pgn = $('pgn-input').value.trim();
-        if (!pgn) throw new Error('Paste or fetch a PGN first.');
-        const data = convertPgn(pgn);
-        const json = JSON.stringify(data, null, 2);
-        $('preview').textContent = json;
-        if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-        currentBlobUrl = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-        const download = $('download');
-        download.href = currentBlobUrl;
-        const base = data.chapters[0]?.name?.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
-        download.download = `${base || 'racing-kings-opening'}.json`;
-        download.style.display = 'inline-flex';
-        const lineCount = data.chapters.reduce((sum, chapter) => sum + countLines(chapter.moves), 0);
-        setStatus(`Converted ${data.chapters.length} chapter${data.chapters.length === 1 ? '' : 's'} and preserved ${lineCount} complete repertoire line${lineCount === 1 ? '' : 's'}.`, 'good');
-      } catch (error) {
-        setStatus(error.message || String(error), 'bad');
-      }
-    });
+  function clean(node) {
+    return {
+      san: node.san,
+      comments: Array.isArray(node.comments) ? [...node.comments] : [],
+      nags: Array.isArray(node.nags) ? [...node.nags] : [],
+      glyphs: Array.isArray(node.glyphs) ? [...node.glyphs] : [],
+      children: Array.isArray(node.children) ? node.children.map(clean) : []
+    };
+  }
+  return root.children.map(clean);
+}
 
-    function countLines(nodes) {
-      let count = 0;
-      const walk = list => (list || []).forEach(node => {
-        if (!node.children?.length) count++;
-        else walk(node.children);
-      });
-      walk(nodes);
-      return count;
+function countLines(nodes) {
+  let count = 0;
+  const walk = list => (list || []).forEach(node => {
+    if (!node.children?.length) count++;
+    else walk(node.children);
+  });
+  walk(nodes);
+  return count;
+}
+
+function convertPgn(pgn) {
+  const games = splitGames(pgn);
+  if (!games.length) throw new Error('No PGN was found.');
+
+  const chapters = games.map((gameText, index) => {
+    const tags = parseTags(gameText);
+    const variantValue = String(tags.Variant || tags.variant || '').trim();
+    if (variantValue && !/racing\s*kings/i.test(variantValue)) {
+      throw new Error(`Chapter ${index + 1} is not Racing Kings (Variant: ${variantValue}).`);
     }
+    const moves = parseTree(stripHeaderLines(gameText));
+    if (!moves.length) throw new Error(`Chapter ${index + 1} contains no moves.`);
+    return {
+      id: tags.ChapterId || tags.ChapterID || `chapter-${index + 1}`,
+      name: tags.ChapterName || tags.Title || tags.Event || `Chapter ${index + 1}`,
+      tags,
+      startingFen: tags.FEN || null,
+      orientation: tags.Orientation || null,
+      moves
+    };
+  });
 
-    $('clear-all').addEventListener('click', () => {
-      $('study-url').value = '';
-      $('pgn-input').value = '';
-      $('preview').textContent = 'No conversion yet.';
-      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-      currentBlobUrl = null;
-      $('download').style.display = 'none';
-      setStatus('Ready.');
-    });
+  const raw = {
+    schemaVersion: 1,
+    app: 'The Comeback 2027',
+    variant: 'racingKings',
+    convertedAt: new Date().toISOString(),
+    source: 'Lichess study PGN',
+    chapters
+  };
 
-    window.addEventListener('beforeunload', () => { if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); });
-  </script>
+  return validateRacingKingsOpening(raw);
+}
+
+$('fetch-study').addEventListener('click', async () => {
+  const url = $('study-url').value.trim();
+  const match = url.match(/(?:https?:\/\/)?(?:www\.)?lichess\.org\/study\/([A-Za-z0-9]{6,16})(?:\/([A-Za-z0-9]{6,16}))?(?:[/?#].*)?$/i);
+  if (!match) { setStatus('Enter a valid public Lichess study or chapter URL.', 'bad'); return; }
+  const studyId = match[1];
+  const chapterId = match[2] || null;
+  try {
+    setStatus(chapterId ? 'Fetching the selected study chapter PGN…' : 'Fetching the study PGN…');
+    const endpoint = chapterId
+      ? `https://lichess.org/api/study/${studyId}/${chapterId}.pgn?comments=true&variations=true&clocks=true`
+      : `https://lichess.org/study/${studyId}.pgn?comments=true&variations=true&clocks=true`;
+    const response = await fetch(endpoint, { headers: { Accept: 'application/x-chess-pgn' } });
+    if (!response.ok) throw new Error(`Lichess returned HTTP ${response.status}.`);
+    const pgn = await response.text();
+    if (!pgn.trim()) throw new Error('The study returned an empty PGN.');
+    $('pgn-input').value = pgn;
+    setStatus(chapterId ? 'Chapter PGN fetched. Review it, then validate and convert.' : 'Study PGN fetched. Review it, then validate and convert.', 'good');
+  } catch (error) {
+    setStatus(`Could not fetch the study${chapterId ? ' chapter' : ''}: ${error.message} You can paste the exported PGN manually instead.`, 'bad');
+  }
+});
+
+$('convert').addEventListener('click', () => {
+  try {
+    const pgn = $('pgn-input').value.trim();
+    if (!pgn) throw new Error('Paste or fetch a PGN first.');
+    const data = convertPgn(pgn);
+    const json = JSON.stringify(data, null, 2);
+    $('preview').textContent = json;
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    const download = $('download');
+    download.href = currentBlobUrl;
+    const base = data.chapters[0]?.name?.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
+    download.download = `${base || 'racing-kings-opening'}.json`;
+    download.style.display = 'inline-flex';
+    const lineCount = data.chapters.reduce((sum, chapter) => sum + countLines(chapter.moves), 0);
+    setStatus(`Validated ${data.chapters.length} chapter${data.chapters.length === 1 ? '' : 's'} and ${lineCount} complete repertoire line${lineCount === 1 ? '' : 's'} against Racing Kings rules.`, 'good');
+  } catch (error) {
+    $('preview').textContent = 'Validation failed. No JSON was exported.';
+    $('download').style.display = 'none';
+    setStatus(error.message || String(error), 'bad');
+  }
+});
+
+$('clear-all').addEventListener('click', () => {
+  $('study-url').value = '';
+  $('pgn-input').value = '';
+  $('preview').textContent = 'No conversion yet.';
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+  currentBlobUrl = null;
+  $('download').style.display = 'none';
+  setStatus('Ready.');
+});
+
+window.addEventListener('beforeunload', () => { if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); });
+</script>
 </body>
 </html>
